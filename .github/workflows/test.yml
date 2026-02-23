@@ -43,3 +43,4 @@ jobs:
           release-type: ${{ inputs.release-type }}
           version: ${{ inputs.version }}
           dry-run: true
+          install-dependencies-command: 'npm ci'

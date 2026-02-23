@@ -16,6 +16,9 @@ inputs:
   dry-run:
     description: Whether to perform a dry run of the publish.
     default: "true"
+  install-dependencies-command:
+    description: Command to install dependencies.
+    default: "yarn install --immutable"
 
 runs:
   using: composite
@@ -23,7 +26,6 @@ runs:
     - name: Set up environment
       shell: bash
       run: |
-        echo "YARN_ENABLE_HARDENED_MODE=0" >> $GITHUB_ENV
         echo "PACKAGE_NAME=PLACEHOLDER" >> $GITHUB_ENV
         echo "PACKAGE_DIR=$(dirname "${{ inputs.package-json-path }}")" >> $GITHUB_ENV
 
@@ -81,7 +83,7 @@ runs:
 
     - name: Install node dependencies
       shell: bash
-      run: yarn install --immutable
+      run: ${{ inputs.install-dependencies-command }}
 
     - name: Build package
       id: build
