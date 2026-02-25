@@ -1,4 +1,4 @@
-# publish-npm-package
+# npm-package-publish
 
 A GitHub composite action that builds and publishes an npm package with automatic version management, npm tag resolution, git release commits, and artifact uploading.
 
