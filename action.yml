@@ -68,22 +68,22 @@ runs:
         PACKAGE_VERSION: ${{ steps.set-package-version.outputs.version }}
       run: |
         if [ "$INPUT_RELEASE_TYPE" = "nightly" ]; then
-          TAG_ARGUMENT="--tag nightly"
+          TAG="nightly"
         elif [ "$INPUT_RELEASE_TYPE" = "beta" ] || [ "$INPUT_RELEASE_TYPE" = "rc" ]; then
-          TAG_ARGUMENT="--tag next"
+          TAG="next"
         else
           if [ "$(node "${{ github.action_path }}/src/should-be-latest.js" "$INPUT_PACKAGE_NAME" "$PACKAGE_VERSION")" = "true" ]; then
-            TAG_ARGUMENT="--tag latest"
+            TAG="latest"
           else
-            TAG_ARGUMENT="--tag legacy"
+            TAG="legacy"
           fi
         fi
 
-        echo "Determined tag argument: $TAG_ARGUMENT"
-        echo "tag-argument=$TAG_ARGUMENT" >> $GITHUB_OUTPUT
+        echo "Determined tag: $TAG"
+        echo "tag=$TAG" >> $GITHUB_OUTPUT
 
     - name: Validate latest version
-      if: steps.figure-out-npm-tag.outputs.tag-argument == '--tag latest'
+      if: steps.figure-out-npm-tag.outputs.tag == 'latest'
       shell: bash
       env:
         INPUT_PACKAGE_NAME: ${{ inputs.package-name }}
@@ -92,7 +92,7 @@ runs:
         node "${{ github.action_path }}/src/validate-latest-version.js" "$INPUT_PACKAGE_NAME" "$PACKAGE_VERSION"
 
     - name: Validate non-latest version
-      if: steps.figure-out-npm-tag.outputs.tag-argument != '--tag latest'
+      if: steps.figure-out-npm-tag.outputs.tag != 'latest'
       shell: bash
       env:
         INPUT_PACKAGE_NAME: ${{ inputs.package-name }}
@@ -104,10 +104,10 @@ runs:
       shell: bash
       env:
         PACKAGE_VERSION: ${{ steps.set-package-version.outputs.version }}
-        NPM_TAG_ARGUMENT: ${{ steps.figure-out-npm-tag.outputs.tag-argument }}
+        NPM_TAG: ${{ steps.figure-out-npm-tag.outputs.tag }}
       run: |
         echo "Version to be published: $PACKAGE_VERSION"
-        echo "NPM tag argument: $NPM_TAG_ARGUMENT"
+        echo "NPM tag: $NPM_TAG"
 
     # Ensure npm 11.5.1 or later is installed for OIDC
     - name: Update npm
@@ -145,15 +145,15 @@ runs:
       shell: bash
       working-directory: ${{ env.PACKAGE_DIR }}
       env:
-        NPM_TAG_ARGUMENT: ${{ steps.figure-out-npm-tag.outputs.tag-argument }}
+        NPM_TAG: ${{ steps.figure-out-npm-tag.outputs.tag }}
         DRY_RUN: ${{ inputs.dry-run }}
       run: |
         DRY_RUN_ARG=""
         if [ "$DRY_RUN" = "true" ]; then DRY_RUN_ARG="--dry-run"; fi
-        npm publish $PACKAGE_NAME --provenance $NPM_TAG_ARGUMENT $DRY_RUN_ARG
+        npm publish "$PACKAGE_NAME" --provenance --tag "$NPM_TAG" $DRY_RUN_ARG
 
     - name: Delete legacy tag
-      if: inputs.dry-run == 'false' && steps.figure-out-npm-tag.outputs.tag-argument == '--tag legacy'
+      if: inputs.dry-run == 'false' && steps.figure-out-npm-tag.outputs.tag == 'legacy'
       shell: bash
       env:
         INPUT_PACKAGE_NAME: ${{ inputs.package-name }}
