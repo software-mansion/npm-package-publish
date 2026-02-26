@@ -40,7 +40,43 @@ function getNextPatchVersion(packageName, major, minor) {
   return Math.max(...patches) + 1;
 }
 
+function getNextPreReleaseIndex(packageName, baseVersion, releaseType) {
+  if (releaseType !== 'beta' && releaseType !== 'rc') {
+    throw new Error(`Invalid pre-release type: ${releaseType}. Must be "beta" or "rc".`);
+  }
+
+  const range = `>=${baseVersion}-${releaseType}.0 <${baseVersion}`;
+  const escapedBase = baseVersion.replace(/\./g, '\\.');
+  const versionRegex = new RegExp(`^${escapedBase}-${releaseType}\\.(\\d+)$`);
+
+  let rawResult;
+  try {
+    rawResult = execSync(
+      `npm view "${packageName}@${range}" version --json`,
+      { stdio: ['ignore', 'pipe', 'pipe'], timeout: 60000 }
+    ).toString().trim();
+  } catch {
+    return 1;
+  }
+
+  const parsed = JSON.parse(rawResult);
+  const allVersions = Array.isArray(parsed) ? parsed : [parsed];
+  const indices = allVersions
+    .map(v => {
+      const match = v.match(versionRegex);
+      return match ? Number(match[1]) : null;
+    })
+    .filter(i => i !== null);
+
+  if (indices.length === 0) {
+    return 1;
+  }
+
+  return Math.max(...indices) + 1;
+}
+
 module.exports = {
   getPackageVersionByTag,
   getNextPatchVersion,
+  getNextPreReleaseIndex,
 };

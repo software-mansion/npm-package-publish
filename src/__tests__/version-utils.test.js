@@ -3,13 +3,14 @@ const { parseVersion } = require('../version-utils');
 jest.mock('../npm-utils', () => ({
   getPackageVersionByTag: jest.fn(),
   getNextPatchVersion: jest.fn(),
+  getNextPreReleaseIndex: jest.fn(),
 }));
 
 jest.mock('child_process', () => ({
   execSync: jest.fn(),
 }));
 
-const { getPackageVersionByTag, getNextPatchVersion } = require('../npm-utils');
+const { getPackageVersionByTag, getNextPatchVersion, getNextPreReleaseIndex } = require('../npm-utils');
 const { execSync } = require('child_process');
 const { getStableBranchVersion, getLatestVersion, getNextStableVersion, getNextPreReleaseVersion } = require('../version-utils');
 
@@ -147,45 +148,24 @@ describe('version-utils', () => {
       jest.clearAllMocks();
     });
 
-    test('returns first rc version when none published', () => {
-      getPackageVersionByTag.mockImplementation(() => {
-        throw new Error('Not found');
-      });
+    test('returns formatted version string using index from getNextPreReleaseIndex', () => {
+      getNextPreReleaseIndex.mockReturnValue(1);
       const result = getNextPreReleaseVersion('package-name', 'rc', '2.22.0');
       expect(result).toBe('2.22.0-rc.1');
+      expect(getNextPreReleaseIndex).toHaveBeenCalledWith('package-name', '2.22.0', 'rc');
     });
 
-    test('returns first beta version when none published', () => {
-      getPackageVersionByTag.mockImplementation(() => {
-        throw new Error('Not found');
-      });
+    test('returns formatted version string for beta release type', () => {
+      getNextPreReleaseIndex.mockReturnValue(3);
       const result = getNextPreReleaseVersion('package-name', 'beta', '2.22.0');
-      expect(result).toBe('2.22.0-beta.1');
+      expect(result).toBe('2.22.0-beta.3');
+      expect(getNextPreReleaseIndex).toHaveBeenCalledWith('package-name', '2.22.0', 'beta');
     });
 
-    test('returns next rc version when some already published', () => {
-      getPackageVersionByTag
-        .mockReturnValueOnce('2.22.0-rc.1') // rc.1 exists
-        .mockReturnValueOnce('2.22.0-rc.2') // rc.2 exists
-        .mockImplementationOnce(() => { throw new Error('Not found'); }); // rc.3 doesn't exist
-      const result = getNextPreReleaseVersion('package-name', 'rc', '2.22.0');
-      expect(result).toBe('2.22.0-rc.3');
-    });
-
-    test('returns next beta version when some already published', () => {
-      getPackageVersionByTag
-        .mockReturnValueOnce('2.22.0-beta.1') // beta.1 exists
-        .mockImplementationOnce(() => { throw new Error('Not found'); }); // beta.2 doesn't exist
-      const result = getNextPreReleaseVersion('package-name', 'beta', '2.22.0');
-      expect(result).toBe('2.22.0-beta.2');
-    });
-
-    test('works with different base versions', () => {
-      getPackageVersionByTag.mockImplementation(() => {
-        throw new Error('Not found');
-      });
-      const result = getNextPreReleaseVersion('package-name', 'rc', '2.23.0');
-      expect(result).toBe('2.23.0-rc.1');
+    test('passes package name through to getNextPreReleaseIndex', () => {
+      getNextPreReleaseIndex.mockReturnValue(2);
+      getNextPreReleaseVersion('my-scoped-package', 'rc', '2.23.0');
+      expect(getNextPreReleaseIndex).toHaveBeenCalledWith('my-scoped-package', '2.23.0', 'rc');
     });
   });
 });
