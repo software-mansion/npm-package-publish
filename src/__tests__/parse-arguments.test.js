@@ -15,52 +15,53 @@ describe('parse-arguments', () => {
   describe('parseArguments', () => {
     // Default behavior (stable release)
     test('returns stable release type with no arguments', () => {
+      process.argv = ['node', 'script.js', '--package-name', 'test-package', '--package-json-path', './package.json'];
       const result = parseArguments();
-      expect(result).toEqual({ releaseType: ReleaseType.STABLE, version: null, packageName: null, packageJsonPath: null });
+      expect(result).toEqual({ releaseType: ReleaseType.STABLE, version: null, packageName: 'test-package', packageJsonPath: './package.json' });
     });
 
     test('returns stable release type with --version flag', () => {
-      process.argv = ['node', 'script.js', '--version', '2.22.0'];
+      process.argv = ['node', 'script.js', '--version', '2.22.0', '--package-name', 'test-package', '--package-json-path', './package.json'];
       const result = parseArguments();
-      expect(result).toEqual({ releaseType: ReleaseType.STABLE, version: '2.22.0', packageName: null, packageJsonPath: null });
+      expect(result).toEqual({ releaseType: ReleaseType.STABLE, version: '2.22.0', packageName: 'test-package', packageJsonPath: './package.json' });
     });
 
     // Single flag tests
     test('returns nightly release type with --nightly flag', () => {
-      process.argv = ['node', 'script.js', '--nightly'];
+      process.argv = ['node', 'script.js', '--nightly', '--package-name', 'test-package', '--package-json-path', './package.json'];
       const result = parseArguments();
-      expect(result).toEqual({ releaseType: ReleaseType.NIGHTLY, version: null, packageName: null, packageJsonPath: null });
+      expect(result).toEqual({ releaseType: ReleaseType.NIGHTLY, version: null, packageName: 'test-package', packageJsonPath: './package.json' });
     });
 
     test('returns beta release type with --beta flag', () => {
-      process.argv = ['node', 'script.js', '--beta'];
+      process.argv = ['node', 'script.js', '--beta', '--package-name', 'test-package', '--package-json-path', './package.json'];
       const result = parseArguments();
-      expect(result).toEqual({ releaseType: ReleaseType.BETA, version: null, packageName: null, packageJsonPath: null });
+      expect(result).toEqual({ releaseType: ReleaseType.BETA, version: null, packageName: 'test-package', packageJsonPath: './package.json' });
     });
 
     test('returns rc release type with --rc flag', () => {
-      process.argv = ['node', 'script.js', '--rc'];
+      process.argv = ['node', 'script.js', '--rc', '--package-name', 'test-package', '--package-json-path', './package.json'];
       const result = parseArguments();
-      expect(result).toEqual({ releaseType: ReleaseType.RELEASE_CANDIDATE, version: null, packageName: null, packageJsonPath: null });
+      expect(result).toEqual({ releaseType: ReleaseType.RELEASE_CANDIDATE, version: null, packageName: 'test-package', packageJsonPath: './package.json' });
     });
 
     // Version with pre-release flags
     test('returns beta with version when both provided', () => {
-      process.argv = ['node', 'script.js', '--beta', '--version', '2.22.0'];
+      process.argv = ['node', 'script.js', '--beta', '--version', '2.22.0', '--package-name', 'test-package', '--package-json-path', './package.json'];
       const result = parseArguments();
-      expect(result).toEqual({ releaseType: ReleaseType.BETA, version: '2.22.0', packageName: null, packageJsonPath: null });
+      expect(result).toEqual({ releaseType: ReleaseType.BETA, version: '2.22.0', packageName: 'test-package', packageJsonPath: './package.json' });
     });
 
     test('returns rc with version when both provided', () => {
-      process.argv = ['node', 'script.js', '--rc', '--version', '2.22.0'];
+      process.argv = ['node', 'script.js', '--rc', '--version', '2.22.0', '--package-name', 'test-package', '--package-json-path', './package.json'];
       const result = parseArguments();
-      expect(result).toEqual({ releaseType: ReleaseType.RELEASE_CANDIDATE, version: '2.22.0', packageName: null, packageJsonPath: null });
+      expect(result).toEqual({ releaseType: ReleaseType.RELEASE_CANDIDATE, version: '2.22.0', packageName: 'test-package', packageJsonPath: './package.json' });
     });
 
     test('handles version flag before release type flag', () => {
-      process.argv = ['node', 'script.js', '--version', '2.22.0', '--rc'];
+      process.argv = ['node', 'script.js', '--version', '2.22.0', '--rc', '--package-name', 'test-package', '--package-json-path', './package.json'];
       const result = parseArguments();
-      expect(result).toEqual({ releaseType: ReleaseType.RELEASE_CANDIDATE, version: '2.22.0', packageName: null, packageJsonPath: null });
+      expect(result).toEqual({ releaseType: ReleaseType.RELEASE_CANDIDATE, version: '2.22.0', packageName: 'test-package', packageJsonPath: './package.json' });
     });
 
     // Mutual exclusivity tests
@@ -86,9 +87,9 @@ describe('parse-arguments', () => {
 
     // Version allowed for nightly
     test('returns nightly with version when both --nightly and --version are provided', () => {
-      process.argv = ['node', 'script.js', '--nightly', '--version', '4.0.0', '--package-name', 'package-name'];
+      process.argv = ['node', 'script.js', '--nightly', '--version', '4.0.0', '--package-name', 'package-name', '--package-json-path', './package.json'];
       const result = parseArguments();
-      expect(result).toEqual({ releaseType: ReleaseType.NIGHTLY, version: '4.0.0', packageName: 'package-name', packageJsonPath: null });
+      expect(result).toEqual({ releaseType: ReleaseType.NIGHTLY, version: '4.0.0', packageName: 'package-name', packageJsonPath: './package.json' });
     });
 
     // Version format validation
@@ -125,19 +126,19 @@ describe('parse-arguments', () => {
 
     // Valid version formats
     test('accepts version with single digit numbers', () => {
-      process.argv = ['node', 'script.js', '--rc', '--version', '1.2.3', '--package-name', 'package-name'];
+      process.argv = ['node', 'script.js', '--rc', '--version', '1.2.3', '--package-name', 'package-name', '--package-json-path', './package.json'];
       const result = parseArguments();
       expect(result.version).toBe('1.2.3');
     });
 
     test('accepts version with large numbers', () => {
-      process.argv = ['node', 'script.js', '--rc', '--version', '10.100.1000', '--package-name', 'package-name'];
+      process.argv = ['node', 'script.js', '--rc', '--version', '10.100.1000', '--package-name', 'package-name', '--package-json-path', './package.json'];
       const result = parseArguments();
       expect(result.version).toBe('10.100.1000');
     });
 
     test('accepts version with zeros', () => {
-      process.argv = ['node', 'script.js', '--rc', '--version', '0.0.0', '--package-name', 'package-name'];
+      process.argv = ['node', 'script.js', '--rc', '--version', '0.0.0', '--package-name', 'package-name', '--package-json-path', './package.json'];
       const result = parseArguments();
       expect(result.version).toBe('0.0.0');
     });
@@ -145,24 +146,24 @@ describe('parse-arguments', () => {
 
   describe('--package-name argument', () => {
     test('parses --package-name value', () => {
-      process.argv = ['node', 'script.js', '--package-name', 'my-package'];
+      process.argv = ['node', 'script.js', '--package-name', 'my-package', '--package-json-path', './package.json'];
       const result = parseArguments();
       expect(result.packageName).toBe('my-package');
     });
 
-    test('packageName is null when --package-name is not provided', () => {
-      const result = parseArguments();
-      expect(result.packageName).toBeNull();
+    test('throws when --package-name is not provided', () => {
+      process.argv = ['node', 'script.js', '--package-json-path', './package.json'];
+      expect(() => parseArguments()).toThrow('Missing required argument: --package-name');
     });
 
     test('parses --package-name alongside release type and version flags', () => {
-      process.argv = ['node', 'script.js', '--rc', '--version', '1.2.3', '--package-name', 'my-package'];
+      process.argv = ['node', 'script.js', '--rc', '--version', '1.2.3', '--package-name', 'my-package', '--package-json-path', './package.json'];
       const result = parseArguments();
       expect(result).toEqual({
         releaseType: ReleaseType.RELEASE_CANDIDATE,
         version: '1.2.3',
         packageName: 'my-package',
-        packageJsonPath: null,
+        packageJsonPath: './package.json',
       });
     });
 
@@ -174,23 +175,23 @@ describe('parse-arguments', () => {
 
   describe('--package-json-path argument', () => {
     test('parses --package-json-path value', () => {
-      process.argv = ['node', 'script.js', '--package-json-path', './packages/my-package/package.json'];
+      process.argv = ['node', 'script.js', '--package-name', 'my-package', '--package-json-path', './packages/my-package/package.json'];
       const result = parseArguments();
       expect(result.packageJsonPath).toBe('./packages/my-package/package.json');
     });
 
-    test('packageJsonPath is null when --package-json-path is not provided', () => {
-      const result = parseArguments();
-      expect(result.packageJsonPath).toBeNull();
+    test('throws when --package-json-path is not provided', () => {
+      process.argv = ['node', 'script.js', '--package-name', 'my-package'];
+      expect(() => parseArguments()).toThrow('Missing required argument: --package-json-path');
     });
 
     test('parses --package-json-path alongside release type and version flags', () => {
-      process.argv = ['node', 'script.js', '--beta', '--version', '1.2.3', '--package-json-path', './package.json'];
+      process.argv = ['node', 'script.js', '--beta', '--version', '1.2.3', '--package-name', 'my-package', '--package-json-path', './package.json'];
       const result = parseArguments();
       expect(result).toEqual({
         releaseType: ReleaseType.BETA,
         version: '1.2.3',
-        packageName: null,
+        packageName: 'my-package',
         packageJsonPath: './package.json',
       });
     });

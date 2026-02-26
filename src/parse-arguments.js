@@ -64,6 +64,9 @@ function parseArguments() {
     }
   }
 
+  assert(packageName != null, 'Missing required argument: --package-name');
+  assert(packageJsonPath != null, 'Missing required argument: --package-json-path');
+
   return { releaseType, version, packageName, packageJsonPath };
 }
 
