@@ -106,6 +106,7 @@ runs:
 
     - name: Install node dependencies
       shell: bash
+      working-directory: ${{ env.PACKAGE_DIR }}
       run: ${{ inputs.install-dependencies-command }}
 
     - name: Build package
