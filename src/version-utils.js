@@ -15,12 +15,12 @@ function parseVersion(version) {
 
 function getStableBranchVersion() {
   const currentBranch = execSync('git rev-parse --abbrev-ref HEAD').toString().trim();
-  try {
-    const [, major, minor] = currentBranch.match(BRANCH_REGEX);
-    return [Number(major), Number(minor)];
-  } catch (error) {
+  const match = currentBranch.match(BRANCH_REGEX);
+  if (!match) {
     throw new Error(`Failed to parse stable version from branch: ${currentBranch}`);
   }
+  const [, major, minor] = match;
+  return [Number(major), Number(minor)];
 }
 
 function getLatestVersion(packageName) {
@@ -29,7 +29,7 @@ function getLatestVersion(packageName) {
   try {
     return parseVersion(latestVersion);
   } catch (error) {
-    throw new Error(`Failed to parse latest version: ${latestVersion}`);
+    throw new Error(`Failed to parse latest version: ${latestVersion}`, { cause: error });
   }
 }
 
