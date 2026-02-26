@@ -31,6 +31,16 @@ runs:
         echo "PACKAGE_NAME=PLACEHOLDER" >> $GITHUB_ENV
         echo "PACKAGE_DIR=$(dirname "$INPUT_PACKAGE_JSON_PATH")" >> $GITHUB_ENV
 
+    - name: Validate release type
+      shell: bash
+      env:
+        INPUT_RELEASE_TYPE: ${{ inputs.release-type }}
+      run: |
+        if [ "$INPUT_RELEASE_TYPE" != "stable" ] && [ "$INPUT_RELEASE_TYPE" != "nightly" ] && [ "$INPUT_RELEASE_TYPE" != "beta" ] && [ "$INPUT_RELEASE_TYPE" != "rc" ]; then
+          echo "Invalid release type: $INPUT_RELEASE_TYPE"
+          exit 1
+        fi
+
     - name: Update package version
       id: set-package-version
       shell: bash
