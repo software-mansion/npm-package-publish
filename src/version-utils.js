@@ -1,5 +1,5 @@
 const { execSync } = require('child_process');
-const { getPackageVersionByTag } = require('./npm-utils');
+const { getPackageVersionByTag, getNextPatchVersion } = require('./npm-utils');
 
 const VERSION_REGEX = /^(\d+)\.(\d+)\.(\d+)(-.*)?$/;
 const BRANCH_REGEX = /^(\d+)\.(\d+)-stable$/;
@@ -35,19 +35,8 @@ function getLatestVersion(packageName) {
 
 function getNextStableVersion(packageName) {
   const [major, minor] = getStableBranchVersion();
-
-  let nextPatch = 0;
-  while (true) {
-    const version = `${major}.${minor}.${nextPatch}`;
-    
-    try {
-      // if the version is already published, increment the patch version and try again
-      getPackageVersionByTag(packageName, version);
-      nextPatch++;
-    } catch (error) {
-      return [Number(major), Number(minor), nextPatch];
-    }
-  }
+  const nextPatch = getNextPatchVersion(packageName, major, minor);
+  return [major, minor, nextPatch];
 }
 
 function getNextPreReleaseVersion(packageName, releaseType, version) {

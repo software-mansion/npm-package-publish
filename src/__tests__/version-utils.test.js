@@ -2,13 +2,14 @@ const { parseVersion } = require('../version-utils');
 
 jest.mock('../npm-utils', () => ({
   getPackageVersionByTag: jest.fn(),
+  getNextPatchVersion: jest.fn(),
 }));
 
 jest.mock('child_process', () => ({
   execSync: jest.fn(),
 }));
 
-const { getPackageVersionByTag } = require('../npm-utils');
+const { getPackageVersionByTag, getNextPatchVersion } = require('../npm-utils');
 const { execSync } = require('child_process');
 const { getStableBranchVersion, getLatestVersion, getNextStableVersion, getNextPreReleaseVersion } = require('../version-utils');
 
@@ -117,24 +118,27 @@ describe('version-utils', () => {
       jest.clearAllMocks();
     });
 
-    test('returns first patch version when none published', () => {
+    test('returns 0 as patch when no versions published yet', () => {
       execSync.mockReturnValue(Buffer.from('2.23-stable\n'));
-      getPackageVersionByTag.mockImplementation(() => {
-        throw new Error('Not found');
-      });
+      getNextPatchVersion.mockReturnValue(0);
       const result = getNextStableVersion('package-name');
       expect(result).toEqual([2, 23, 0]);
+      expect(getNextPatchVersion).toHaveBeenCalledWith('package-name', 2, 23);
     });
 
     test('returns next patch version when some already published', () => {
       execSync.mockReturnValue(Buffer.from('2.22-stable\n'));
-      getPackageVersionByTag
-        .mockReturnValueOnce('2.22.0') // 2.22.0 exists
-        .mockReturnValueOnce('2.22.1') // 2.22.1 exists
-        .mockReturnValueOnce('2.22.2') // 2.22.2 exists
-        .mockImplementationOnce(() => { throw new Error('Not found'); }); // 2.22.3 doesn't exist
+      getNextPatchVersion.mockReturnValue(3);
       const result = getNextStableVersion('package-name');
       expect(result).toEqual([2, 22, 3]);
+      expect(getNextPatchVersion).toHaveBeenCalledWith('package-name', 2, 22);
+    });
+
+    test('passes package name through to getNextPatchVersion', () => {
+      execSync.mockReturnValue(Buffer.from('1.0-stable\n'));
+      getNextPatchVersion.mockReturnValue(0);
+      getNextStableVersion('my-scoped-package');
+      expect(getNextPatchVersion).toHaveBeenCalledWith('my-scoped-package', 1, 0);
     });
   });
 
