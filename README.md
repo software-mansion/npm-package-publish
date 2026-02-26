@@ -5,7 +5,7 @@ A GitHub composite action that builds and publishes an npm package with automati
 ## How it works
 
 1. **Version resolution** — Computes the next version based on the release type:
-   - `nightly` — generates a timestamped pre-release version (e.g. `3.0.0-nightly-20260223-abc123def`)
+   - `nightly` — generates a timestamped pre-release version (e.g. `3.0.0-nightly-20260223-abc123def`), either based on the version published as latest (minor + 1), or based on the exact version passed to the action
    - `beta` / `rc` — generates an incremented pre-release version (e.g. `3.0.0-beta.1`, `3.0.0-rc.2`)
    - `stable` — uses the stable version inferred from the branch name (assumes `x.y-stable` format for branch name), or a manually provided version
 2. **npm tag resolution** — Automatically assigns the correct dist-tag (`nightly`, `next`, `latest`) based on the release type and whether the version is newer than what is currently tagged `latest` on the registry.
@@ -48,4 +48,4 @@ The action automatically selects the appropriate npm dist-tag:
 
 ## Permissions
 
-This action uses `npm publish --provenance`, which requires npm 11.5.1 or later (installed automatically during the run) and an npm access token or OIDC configuration in the calling workflow.
+This action uses `npm publish --provenance`, which requires npm 11.5.1 or later for OIDC provenance support. npm 11.11.0 is installed automatically during the run. An npm access token or OIDC configuration in the calling workflow is also required.
