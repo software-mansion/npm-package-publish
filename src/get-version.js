@@ -14,18 +14,23 @@ function getVersion(packageName, releaseType, versionHint = null) {
       patch = 0;
     }
 
-    const currentSHA = execSync('git rev-parse HEAD').toString().trim().slice(0, 9);
-
-    const latestNightlyVersionString = getPackageVersionByTag(packageName, 'nightly');
-    const latestNightlyVersionParts = latestNightlyVersionString.split('-');
-    const latestNightlySHA = latestNightlyVersionParts.pop();
-    const latestNightlyVersion = latestNightlyVersionParts.shift();
-
     const versionToUse = `${major}.${minor}.${patch}`;
+    const currentSHA = execSync('git rev-parse HEAD').toString().trim().slice(0, 9);
+    let latestNightlyVersion = null;
+    let latestNightlySHA = null;
+
+    try {
+      const latestNightlyVersionString = getPackageVersionByTag(packageName, 'nightly');
+      const latestNightlyVersionParts = latestNightlyVersionString.split('-');
+      latestNightlyVersion = latestNightlyVersionParts.shift();
+      latestNightlySHA = latestNightlyVersionParts.pop();
+    } catch (error) {
+      console.warn(`Failed to get latest nightly version for ${packageName}: ${error.message}`);
+    }
 
     // Don't publish the same commit twice if the version is the same
     if (latestNightlySHA === currentSHA && latestNightlyVersion === versionToUse) {
-      throw new Error(`Latest nightly version ${latestNightlyVersionString} SHA ${latestNightlySHA} is the same as current SHA ${currentSHA}`);
+      throw new Error(`Latest nightly version ${latestNightlyVersion} SHA ${latestNightlySHA} is the same as current SHA ${currentSHA}`);
     }
 
     const now = new Date();

@@ -107,7 +107,7 @@ describe('get-version', () => {
         getPackageVersionByTag.mockReturnValue('3.1.0-nightly-20261205-abc123def');
 
         expect(() => getVersion('package-name', ReleaseType.NIGHTLY)).toThrow(
-          'Latest nightly version 3.1.0-nightly-20261205-abc123def SHA abc123def is the same as current SHA abc123def'
+          'Latest nightly version 3.1.0 SHA abc123def is the same as current SHA abc123def'
         );
       });
 
@@ -163,7 +163,7 @@ describe('get-version', () => {
         getPackageVersionByTag.mockReturnValue('4.0.0-nightly-20260129-abc123def');
 
         expect(() => getVersion('package-name', ReleaseType.NIGHTLY, '4.0.0')).toThrow(
-          'Latest nightly version 4.0.0-nightly-20260129-abc123def SHA abc123def is the same as current SHA abc123def'
+          'Latest nightly version 4.0.0 SHA abc123def is the same as current SHA abc123def'
         );
       });
 
