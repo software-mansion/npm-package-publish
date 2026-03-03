@@ -3,7 +3,7 @@ jest.mock('child_process', () => ({
 }));
 
 const { execSync } = require('child_process');
-const { getNextPatchVersion, getNextPreReleaseIndex, isPackageNotFoundError } = require('../npm-utils');
+const { getNextPatchVersion, getNextPreReleaseIndex, isNpmNotFoundError } = require('../npm-utils');
 
 function makeNpmError({ message = 'Command failed: npm view pkg@latest version', stderr = '' } = {}) {
   const cause = Object.assign(new Error(message), {
@@ -13,35 +13,35 @@ function makeNpmError({ message = 'Command failed: npm view pkg@latest version',
 }
 
 describe('npm-utils', () => {
-  describe('isPackageNotFoundError', () => {
+  describe('isNpmNotFoundError', () => {
     test('returns true when stderr contains E404', () => {
       const error = makeNpmError({ stderr: 'npm error code E404\nnpm error 404 Not Found' });
-      expect(isPackageNotFoundError(error)).toBe(true);
+      expect(isNpmNotFoundError(error)).toBe(true);
     });
 
     test('returns true when message contains E404 (Node.js includes stderr in message)', () => {
       const error = makeNpmError({ message: 'Command failed: npm view pkg@latest version\nnpm error code E404' });
-      expect(isPackageNotFoundError(error)).toBe(true);
+      expect(isNpmNotFoundError(error)).toBe(true);
     });
 
     test('returns false when neither stderr nor message contains E404', () => {
       const error = makeNpmError({ message: 'Command failed: npm view pkg@latest version', stderr: 'npm error code ECONNRESET' });
-      expect(isPackageNotFoundError(error)).toBe(false);
+      expect(isNpmNotFoundError(error)).toBe(false);
     });
 
     test('returns true when error has no cause but its own message contains E404', () => {
       const error = new Error('npm error code E404\nnpm error 404 Not Found');
-      expect(isPackageNotFoundError(error)).toBe(true);
+      expect(isNpmNotFoundError(error)).toBe(true);
     });
 
     test('returns false when error has no cause', () => {
-      expect(isPackageNotFoundError(new Error('no cause'))).toBe(false);
+      expect(isNpmNotFoundError(new Error('no cause'))).toBe(false);
     });
 
     test('returns false when cause has no message and no stderr', () => {
       const cause = {};
       const error = Object.assign(new Error('wrapper'), { cause });
-      expect(isPackageNotFoundError(error)).toBe(false);
+      expect(isNpmNotFoundError(error)).toBe(false);
     });
   });
 

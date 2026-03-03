@@ -1,4 +1,4 @@
-const { getPackageVersionByTag, isPackageNotFoundError } = require('./npm-utils');
+const { getPackageVersionByTag, isNpmNotFoundError } = require('./npm-utils');
 const { parseVersion } = require('./version-utils');
 
 function validateLatestVersion(packageName, version) {
@@ -12,7 +12,7 @@ function validateLatestVersion(packageName, version) {
   try {
     latestVersion = getPackageVersionByTag(packageName, 'latest');
   } catch (error) {
-    if (isPackageNotFoundError(error)) {
+    if (isNpmNotFoundError(error)) {
       // No 'latest' tag exists, so this version should be latest.
       // newPreRelease is guaranteed null here (checked above).
       return true;

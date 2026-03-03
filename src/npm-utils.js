@@ -14,7 +14,7 @@ function getPackageVersionByTag(packageName, tag) {
   }
 }
 
-function isPackageNotFoundError(error) {
+function isNpmNotFoundError(error) {
   const cause = error.cause || error;
   const text = (cause.stderr?.toString() ?? '') + (cause.message ?? '');
   return text.includes('npm error code E404');
@@ -30,7 +30,7 @@ function getNextPatchVersion(packageName, major, minor) {
       { stdio: ['ignore', 'pipe', 'pipe'], timeout: 60000 }
     ).toString().trim();
   } catch (error) {
-    if (isPackageNotFoundError(error)) {
+    if (isNpmNotFoundError(error)) {
       // No versions published yet for this major.minor range
       return 0;
     }
@@ -65,7 +65,7 @@ function getNextPreReleaseIndex(packageName, baseVersion, releaseType) {
       { stdio: ['ignore', 'pipe', 'pipe'], timeout: 60000 }
     ).toString().trim();
   } catch (error) {
-    if (isPackageNotFoundError(error)) {
+    if (isNpmNotFoundError(error)) {
       return 1;
     }
     throw error;
@@ -89,7 +89,7 @@ function getNextPreReleaseIndex(packageName, baseVersion, releaseType) {
 
 module.exports = {
   getPackageVersionByTag,
-  isPackageNotFoundError,
+  isNpmNotFoundError,
   getNextPatchVersion,
   getNextPreReleaseIndex,
 };

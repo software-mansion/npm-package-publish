@@ -1,4 +1,4 @@
-const { getPackageVersionByTag, isPackageNotFoundError } = require('./npm-utils');
+const { getPackageVersionByTag, isNpmNotFoundError } = require('./npm-utils');
 const { parseVersion } = require('./version-utils');
 
 function shouldBeLatest(packageName, version) {
@@ -13,7 +13,7 @@ function shouldBeLatest(packageName, version) {
   try {
     latestVersion = getPackageVersionByTag(packageName, 'latest');
   } catch (error) {
-    if (isPackageNotFoundError(error)) {
+    if (isNpmNotFoundError(error)) {
       // No 'latest' tag exists, so this version should be latest.
       return true;
     }
