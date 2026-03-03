@@ -24,6 +24,10 @@ A GitHub composite action that builds and publishes an npm package with automati
 | `dry-run` | No | `true` | When `true`, runs `npm publish --dry-run` and skips `git push`. Set to `false` for a real release. |
 | `install-dependencies-command` | No | `yarn install --immutable` | Command used to install project dependencies before building. |
 
+## NPM Trusted publishing
+
+To use this action, you have to configure the workflow using it as a [trusted publisher on NPM](https://docs.npmjs.com/trusted-publishers#configuring-trusted-publishing).
+
 ## Example usage
 
 ```yaml
