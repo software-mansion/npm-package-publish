@@ -107,5 +107,13 @@ describe('should-be-latest', () => {
       const result = shouldBeLatest('package-name', '2.20.5');
       expect(result).toBe(false);
     });
+
+    test('returns true when no latest tag exists (first publish)', () => {
+      getPackageVersionByTag.mockImplementation(() => {
+        throw new Error('Package not found');
+      });
+      const result = shouldBeLatest('new-package', '1.0.0');
+      expect(result).toBe(true);
+    });
   });
 });

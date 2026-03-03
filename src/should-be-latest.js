@@ -9,7 +9,14 @@ function shouldBeLatest(packageName, version) {
     return false;
   }
 
-  const latestVersion = getPackageVersionByTag(packageName, 'latest');
+  let latestVersion;
+  try {
+    latestVersion = getPackageVersionByTag(packageName, 'latest');
+  } catch {
+    // No 'latest' tag exists — package has never been published, so this version should be latest.
+    return true;
+  }
+
   const [major, minor, patch] = parseVersion(latestVersion);
 
   return (newMajor === major && newMinor === minor && newPatch >= patch + 1) ||
