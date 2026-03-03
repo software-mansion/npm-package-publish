@@ -13,8 +13,8 @@ function validateLatestVersion(packageName, version) {
     latestVersion = getPackageVersionByTag(packageName, 'latest');
   } catch (error) {
     if (isPackageNotFoundError(error)) {
-      // No 'latest' tag exists — package has never been published.
-      // newPreRelease is guaranteed null here (checked above), so the version is safe to become latest.
+      // No 'latest' tag exists, so this version should be latest.
+      // newPreRelease is guaranteed null here (checked above).
       return true;
     }
 

@@ -15,10 +15,9 @@ function getPackageVersionByTag(packageName, tag) {
 }
 
 function isPackageNotFoundError(error) {
-  const cause = error.cause;
-  if (!cause) return false;
+  const cause = error.cause || error;
   const text = (cause.stderr?.toString() ?? '') + (cause.message ?? '');
-  return text.includes('E404');
+  return text.includes('npm error code E404');
 }
 
 function getNextPatchVersion(packageName, major, minor) {
@@ -30,9 +29,12 @@ function getNextPatchVersion(packageName, major, minor) {
       `npm view ${packageName}@"${range}" version --json`,
       { stdio: ['ignore', 'pipe', 'pipe'], timeout: 60000 }
     ).toString().trim();
-  } catch {
-    // No versions published yet for this major.minor range
-    return 0;
+  } catch (error) {
+    if (isPackageNotFoundError(error)) {
+      // No versions published yet for this major.minor range
+      return 0;
+    }
+    throw error;
   }
 
   const parsed = JSON.parse(rawResult);
@@ -62,8 +64,11 @@ function getNextPreReleaseIndex(packageName, baseVersion, releaseType) {
       `npm view "${packageName}@${range}" version --json`,
       { stdio: ['ignore', 'pipe', 'pipe'], timeout: 60000 }
     ).toString().trim();
-  } catch {
-    return 1;
+  } catch (error) {
+    if (isPackageNotFoundError(error)) {
+      return 1;
+    }
+    throw error;
   }
 
   const parsed = JSON.parse(rawResult);
