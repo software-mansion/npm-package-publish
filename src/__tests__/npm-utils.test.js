@@ -103,7 +103,7 @@ describe('npm-utils', () => {
       getNextPatchVersion('package-name', 1, 5);
       expect(execSync).toHaveBeenCalledWith(
         'npm view package-name@"1.5.x" version --json',
-        expect.objectContaining({ timeout: 60000 })
+        expect.objectContaining({ timeout: 20000 })
       );
     });
 
@@ -176,7 +176,7 @@ describe('npm-utils', () => {
       getNextPreReleaseIndex('package-name', '2.22.0', 'rc');
       expect(execSync).toHaveBeenCalledWith(
         'npm view "package-name@>=2.22.0-rc.0 <2.22.0" version --json',
-        expect.objectContaining({ timeout: 60000 })
+        expect.objectContaining({ timeout: 20000 })
       );
     });
 
