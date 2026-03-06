@@ -1,8 +1,9 @@
 jest.mock('../npm-utils', () => ({
   getPackageVersionByTag: jest.fn(),
+  isNpmNotFoundError: jest.fn(),
 }));
 
-const { getPackageVersionByTag } = require('../npm-utils');
+const { getPackageVersionByTag, isNpmNotFoundError } = require('../npm-utils');
 const { validateLatestVersion } = require('../validate-latest-version');
 
 describe('validate-latest-version', () => {
@@ -129,6 +130,27 @@ describe('validate-latest-version', () => {
       getPackageVersionByTag.mockReturnValue('2.22.0');
       expect(() => validateLatestVersion('package-name', '2.23.1')).toThrow(
         'Version 2.23.1 is not a valid latest version based on latest published version 2.22.0'
+      );
+    });
+
+    test('returns true when the error is a package-not-found error (first publish)', () => {
+      const error = new Error('Package not found');
+      getPackageVersionByTag.mockImplementation(() => { throw error; });
+      isNpmNotFoundError.mockReturnValue(true);
+      expect(validateLatestVersion('new-package', '1.0.0')).toBe(true);
+    });
+
+    test('re-throws errors that are not package-not-found', () => {
+      const error = new Error('network timeout');
+      getPackageVersionByTag.mockImplementation(() => { throw error; });
+      isNpmNotFoundError.mockReturnValue(false);
+      expect(() => validateLatestVersion('new-package', '1.0.0')).toThrow('network timeout');
+    });
+
+    test('still rejects pre-release versions even when no latest tag exists', () => {
+      // The pre-release check runs before the npm call, so getPackageVersionByTag is never reached.
+      expect(() => validateLatestVersion('new-package', '1.0.0-beta.1')).toThrow(
+        'Pre-release version 1.0.0-beta.1 cannot be the latest version'
       );
     });
   });

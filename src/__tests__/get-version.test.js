@@ -167,6 +167,28 @@ describe('get-version', () => {
         );
       });
 
+      test('throws a clear error when no latest tag exists and no version hint provided', () => {
+        getLatestVersion.mockImplementation(() => {
+          throw new Error('Failed to get package version');
+        });
+        execSync.mockReturnValue(Buffer.from('abc123def\n'));
+
+        expect(() => getVersion('new-package', ReleaseType.NIGHTLY)).toThrow(
+          "No 'latest' version found for new-package on npm. Provide an explicit 'version' input when publishing nightlies for a new package."
+        );
+      });
+
+      test('succeeds when no latest tag exists but version hint is provided', () => {
+        getLatestVersion.mockImplementation(() => {
+          throw new Error('Failed to get package version');
+        });
+        parseVersion.mockReturnValue([1, 0, 0]);
+        execSync.mockReturnValue(Buffer.from('abc123def\n'));
+
+        expect(() => getVersion('new-package', ReleaseType.NIGHTLY, '1.0.0')).not.toThrow();
+        expect(getLatestVersion).not.toHaveBeenCalled();
+      });
+
       test('pads single digit month and day', () => {
         global.Date = class extends RealDate {
           constructor(...args) {

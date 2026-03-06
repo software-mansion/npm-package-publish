@@ -40,6 +40,12 @@ function getPackageVersionByTag(packageName, tag) {
   }
 }
 
+function isNpmNotFoundError(error) {
+  const cause = error.cause || error;
+  const text = (cause.stderr?.toString() ?? '') + (cause.message ?? '');
+  return text.includes('npm error code E404');
+}
+
 function getNextPatchVersion(packageName, major, minor) {
   const range = `${major}.${minor}.x`;
 
@@ -51,9 +57,12 @@ function getNextPatchVersion(packageName, major, minor) {
         { stdio: ['ignore', 'pipe', 'pipe'], timeout: 20000 }
       )
     ).toString().trim();
-  } catch {
-    // No versions published yet for this major.minor range, or all retries exhausted.
-    return 0;
+  } catch (error) {
+    if (isNpmNotFoundError(error)) {
+      // No versions published yet for this major.minor range
+      return 0;
+    }
+    throw error;
   }
 
   const parsed = JSON.parse(rawResult);
@@ -85,8 +94,11 @@ function getNextPreReleaseIndex(packageName, baseVersion, releaseType) {
         { stdio: ['ignore', 'pipe', 'pipe'], timeout: 20000 }
       )
     ).toString().trim();
-  } catch {
-    return 1;
+  } catch (error) {
+    if (isNpmNotFoundError(error)) {
+      return 1;
+    }
+    throw error;
   }
 
   const parsed = JSON.parse(rawResult);
@@ -107,6 +119,7 @@ function getNextPreReleaseIndex(packageName, baseVersion, releaseType) {
 
 module.exports = {
   getPackageVersionByTag,
+  isNpmNotFoundError,
   getNextPatchVersion,
   getNextPreReleaseIndex,
   withRetry,
