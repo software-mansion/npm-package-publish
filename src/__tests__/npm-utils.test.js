@@ -3,7 +3,7 @@ jest.mock('child_process', () => ({
 }));
 
 const { execSync } = require('child_process');
-const { getNextPatchVersion, getNextPreReleaseIndex, isNpmNotFoundError } = require('../npm-utils');
+const { getPackageVersionByTag, getNextPatchVersion, getNextPreReleaseIndex, isNpmNotFoundError, withRetry } = require('../npm-utils');
 
 function makeNpmError({ message = 'Command failed: npm view pkg@latest version', stderr = '' } = {}) {
   const cause = Object.assign(new Error(message), {
@@ -13,6 +13,69 @@ function makeNpmError({ message = 'Command failed: npm view pkg@latest version',
 }
 
 describe('npm-utils', () => {
+  describe('withRetry', () => {
+    test('returns the result immediately when fn succeeds on the first attempt', () => {
+      const fn = jest.fn().mockReturnValue('ok');
+      expect(withRetry(fn)).toBe('ok');
+      expect(fn).toHaveBeenCalledTimes(1);
+    });
+
+    test('retries after a failure and returns the result when a subsequent attempt succeeds', () => {
+      const fn = jest.fn()
+        .mockImplementationOnce(() => { throw new Error('transient'); })
+        .mockReturnValue('ok');
+      expect(withRetry(fn, { retries: 3 })).toBe('ok');
+      expect(fn).toHaveBeenCalledTimes(2);
+    });
+
+    test('retries the configured number of times before giving up', () => {
+      const fn = jest.fn().mockImplementation(() => { throw new Error('always fails'); });
+      expect(() => withRetry(fn, { retries: 3 })).toThrow('always fails');
+      expect(fn).toHaveBeenCalledTimes(4); // 1 initial + 3 retries
+    });
+
+    test('throws the last error after all retries are exhausted', () => {
+      const fn = jest.fn()
+        .mockImplementationOnce(() => { throw new Error('first'); })
+        .mockImplementationOnce(() => { throw new Error('second'); })
+        .mockImplementationOnce(() => { throw new Error('last'); });
+      expect(() => withRetry(fn, { retries: 2 })).toThrow('last');
+    });
+
+    test('does not retry when retries is 0', () => {
+      const fn = jest.fn().mockImplementation(() => { throw new Error('fail'); });
+      expect(() => withRetry(fn, { retries: 0 })).toThrow('fail');
+      expect(fn).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('getPackageVersionByTag', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    test('returns the version string on success', () => {
+      execSync.mockReturnValue(Buffer.from('2.22.0\n'));
+      expect(getPackageVersionByTag('package-name', 'latest')).toBe('2.22.0');
+    });
+
+    test('retries on transient failure and returns result on subsequent success', () => {
+      execSync
+        .mockImplementationOnce(() => { throw new Error('network error'); })
+        .mockReturnValue(Buffer.from('2.22.0\n'));
+      expect(getPackageVersionByTag('package-name', 'latest')).toBe('2.22.0');
+      expect(execSync).toHaveBeenCalledTimes(2);
+    });
+
+    test('throws after all retries are exhausted', () => {
+      execSync.mockImplementation(() => { throw new Error('network error'); });
+      expect(() => getPackageVersionByTag('package-name', 'latest')).toThrow(
+        'Failed to get package version for package-name by tag: latest'
+      );
+      expect(execSync).toHaveBeenCalledTimes(4); // 1 initial + 3 retries
+    });
+  });
+
   describe('isNpmNotFoundError', () => {
     test('returns true when stderr contains E404', () => {
       const error = makeNpmError({ stderr: 'npm error code E404\nnpm error 404 Not Found' });
@@ -79,7 +142,7 @@ describe('npm-utils', () => {
       getNextPatchVersion('package-name', 1, 5);
       expect(execSync).toHaveBeenCalledWith(
         'npm view package-name@"1.5.x" version --json',
-        expect.objectContaining({ timeout: 60000 })
+        expect.objectContaining({ timeout: 20000 })
       );
     });
 
@@ -90,6 +153,19 @@ describe('npm-utils', () => {
         'npm view my-scoped-package@"3.0.x" version --json',
         expect.anything()
       );
+    });
+
+    test('retries on transient failure and returns result on subsequent success', () => {
+      execSync
+        .mockImplementationOnce(() => { throw new Error('network error'); })
+        .mockReturnValue(Buffer.from('"2.22.3"'));
+      expect(getNextPatchVersion('package-name', 2, 22)).toBe(4);
+      expect(execSync).toHaveBeenCalledTimes(2);
+    });
+
+    test('throws after all retries are exhausted', () => {
+      execSync.mockImplementation(() => { throw new Error('network error'); });
+      expect(() => getNextPatchVersion('package-name', 2, 22)).toThrow('network error');
     });
 
     test('re-throws non-E404 errors', () => {
@@ -144,7 +220,7 @@ describe('npm-utils', () => {
       getNextPreReleaseIndex('package-name', '2.22.0', 'rc');
       expect(execSync).toHaveBeenCalledWith(
         'npm view "package-name@>=2.22.0-rc.0 <2.22.0" version --json',
-        expect.objectContaining({ timeout: 60000 })
+        expect.objectContaining({ timeout: 20000 })
       );
     });
 
@@ -165,6 +241,19 @@ describe('npm-utils', () => {
     test('throws for an empty release type', () => {
       expect(() => getNextPreReleaseIndex('package-name', '2.22.0', ''))
         .toThrow('Invalid pre-release type: . Must be "beta" or "rc".');
+    });
+
+    test('retries on transient failure and returns result on subsequent success', () => {
+      execSync
+        .mockImplementationOnce(() => { throw new Error('network error'); })
+        .mockReturnValue(Buffer.from(JSON.stringify(['2.22.0-rc.1', '2.22.0-rc.2'])));
+      expect(getNextPreReleaseIndex('package-name', '2.22.0', 'rc')).toBe(3);
+      expect(execSync).toHaveBeenCalledTimes(2);
+    });
+
+    test('throws after all retries are exhausted', () => {
+      execSync.mockImplementation(() => { throw new Error('network error'); });
+      expect(() => getNextPreReleaseIndex('package-name', '2.22.0', 'rc')).toThrow('network error');
     });
 
     test('re-throws non-E404 errors', () => {
