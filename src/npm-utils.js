@@ -1,5 +1,29 @@
 const { execSync } = require('child_process');
 
+const RETRY_COUNT = 3;
+const BASE_RETRY_DELAY_MS = process.env.NODE_ENV === 'test' ? 0 : 1000;
+
+function sleep(ms) {
+  if (ms > 0) {
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+  }
+}
+
+function withRetry(fn, { retries = RETRY_COUNT, baseDelayMs = BASE_RETRY_DELAY_MS } = {}) {
+  let lastError;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return fn();
+    } catch (error) {
+      lastError = error;
+      if (attempt < retries) {
+        sleep(baseDelayMs * (2 ** attempt));
+      }
+    }
+  }
+  throw lastError;
+}
+
 function getPackageVersionByTag(packageName, tag) {
   const npmString =
     tag != null
@@ -7,11 +31,19 @@ function getPackageVersionByTag(packageName, tag) {
       : `npm view ${packageName} version`;
 
   try {
-    const result = execSync(npmString, { stdio: ['ignore', 'pipe', 'pipe'], timeout: 60000 }).toString().trim();
+    const result = withRetry(() =>
+      execSync(npmString, { stdio: ['ignore', 'pipe', 'pipe'], timeout: 20000 })
+    ).toString().trim();
     return result;
   } catch (error) {
     throw new Error(`Failed to get package version for ${packageName} by tag: ${tag}`, { cause: error });
   }
+}
+
+function isNpmNotFoundError(error) {
+  const cause = error.cause || error;
+  const text = (cause.stderr?.toString() ?? '') + (cause.message ?? '');
+  return text.includes('npm error code E404');
 }
 
 function getNextPatchVersion(packageName, major, minor) {
@@ -19,13 +51,18 @@ function getNextPatchVersion(packageName, major, minor) {
 
   let rawResult;
   try {
-    rawResult = execSync(
-      `npm view ${packageName}@"${range}" version --json`,
-      { stdio: ['ignore', 'pipe', 'pipe'], timeout: 60000 }
+    rawResult = withRetry(() =>
+      execSync(
+        `npm view ${packageName}@"${range}" version --json`,
+        { stdio: ['ignore', 'pipe', 'pipe'], timeout: 20000 }
+      )
     ).toString().trim();
-  } catch {
-    // No versions published yet for this major.minor range
-    return 0;
+  } catch (error) {
+    if (isNpmNotFoundError(error)) {
+      // No versions published yet for this major.minor range
+      return 0;
+    }
+    throw error;
   }
 
   const parsed = JSON.parse(rawResult);
@@ -51,12 +88,17 @@ function getNextPreReleaseIndex(packageName, baseVersion, releaseType) {
 
   let rawResult;
   try {
-    rawResult = execSync(
-      `npm view "${packageName}@${range}" version --json`,
-      { stdio: ['ignore', 'pipe', 'pipe'], timeout: 60000 }
+    rawResult = withRetry(() =>
+      execSync(
+        `npm view "${packageName}@${range}" version --json`,
+        { stdio: ['ignore', 'pipe', 'pipe'], timeout: 20000 }
+      )
     ).toString().trim();
-  } catch {
-    return 1;
+  } catch (error) {
+    if (isNpmNotFoundError(error)) {
+      return 1;
+    }
+    throw error;
   }
 
   const parsed = JSON.parse(rawResult);
@@ -77,6 +119,8 @@ function getNextPreReleaseIndex(packageName, baseVersion, releaseType) {
 
 module.exports = {
   getPackageVersionByTag,
+  isNpmNotFoundError,
   getNextPatchVersion,
   getNextPreReleaseIndex,
+  withRetry,
 };

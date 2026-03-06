@@ -11,7 +11,17 @@ function getVersion(packageName, releaseType, versionHint = null) {
     if (versionHint) {
       [major, minor, patch] = parseVersion(versionHint);
     } else {
-      [major, minor] = getLatestVersion(packageName);
+      let latestVersion;
+      try {
+        latestVersion = getLatestVersion(packageName);
+      } catch (error) {
+        throw new Error(
+          `No 'latest' version found for ${packageName} on npm. ` +
+          `Provide an explicit 'version' input when publishing nightlies for a new package.`,
+          { cause: error }
+        );
+      }
+      [major, minor] = latestVersion;
       minor++;
       patch = 0;
     }
