@@ -1,6 +1,6 @@
 const { execSync } = require('child_process');
 const { getStableBranchVersion, getLatestVersion, getNextPreReleaseVersion, getNextStableVersion, parseVersion } = require('./version-utils');
-const { ReleaseType } = require('./parse-arguments');
+const { ReleaseType, parseArguments } = require('./parse-arguments');
 const { getPackageVersionByTag } = require('./npm-utils');
 
 const NIGHTLY_REGEX = /^(\d+\.\d+\.\d+)-nightly-\d{8}-([0-9a-f]+)$/;
@@ -74,3 +74,15 @@ function getVersion(packageName, releaseType, versionHint = null) {
 module.exports = {
   getVersion,
 };
+
+if (require.main === module) {
+  const {
+    releaseType,
+    version: versionHint,
+    packageName,
+  } = parseArguments();
+  const version = getVersion(packageName, releaseType, versionHint);
+
+  // Intentional, this is consumed by the action
+  console.log(version);
+}

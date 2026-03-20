@@ -13,6 +13,15 @@ inputs:
   version:
     description: Specific version to publish (usually inferred from x.y-stable branch name).
     default: ""
+  version-getter-script:
+    description: Path to a custom script that determines the version to publish.
+    default: ""
+  npm-tag:
+    description: NPM tag to publish under (usually inferred from release type and version).
+    default: ""
+  perform-git-operations:
+    description: Whether to perform git operations (committing version change, pushing tags). Only applicable when not doing a dry run.
+    default: "true"
   dry-run:
     description: Whether to perform a dry run of the publish.
     default: "true"
@@ -41,32 +50,60 @@ runs:
           exit 1
         fi
 
+    - name: Resolve release version
+      id: resolve-version
+      shell: bash
+      env:
+        INPUT_PACKAGE_NAME: ${{ inputs.package-name }}
+        INPUT_LOCAL_VERSION_GETTER_SCRIPT: ${{ inputs.local-version-getter-script }}
+        INPUT_RELEASE_TYPE: ${{ inputs.release-type }}
+        INPUT_VERSION: ${{ inputs.version }}
+        INPUT_PACKAGE_JSON_PATH: ${{ inputs.package-json-path }}
+      run: |
+        ARGS=(--package-name "$INPUT_PACKAGE_NAME" --package-json-path "$INPUT_PACKAGE_JSON_PATH")
+        if [ "$INPUT_RELEASE_TYPE" != 'stable' ]; then ARGS+=("--$INPUT_RELEASE_TYPE"); fi
+        if [ -n "$INPUT_VERSION" ]; then ARGS+=(--version "$INPUT_VERSION"); fi
+        if [ -n "$INPUT_LOCAL_VERSION_GETTER_SCRIPT" ]; then
+          VERSION=$(node "$INPUT_LOCAL_VERSION_GETTER_SCRIPT" "${ARGS[@]}")
+          echo "Resolved version from custom script: $VERSION"
+        else
+          VERSION=$(node "${{ github.action_path }}/src/get-version.js" "${ARGS[@]}")
+          echo "Resolved version with default script: $VERSION"
+        fi
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+
     - name: Update package version
       id: set-package-version
       shell: bash
       env:
-        INPUT_PACKAGE_NAME: ${{ inputs.package-name }}
+        RESOLVED_VERSION: ${{ steps.resolve-version.outputs.version }}
         INPUT_PACKAGE_JSON_PATH: ${{ inputs.package-json-path }}
         INPUT_RELEASE_TYPE: ${{ inputs.release-type }}
-        INPUT_VERSION: ${{ inputs.version }}
+        INPUT_PACKAGE_NAME: ${{ inputs.package-name }}
       run: |
-        ARGS=(--package-name "$INPUT_PACKAGE_NAME" --package-json-path "$INPUT_PACKAGE_JSON_PATH")
-        if [ "$INPUT_RELEASE_TYPE" = "nightly" ]; then ARGS+=(--nightly); fi
-        if [ "$INPUT_RELEASE_TYPE" = "beta" ]; then ARGS+=(--beta); fi
-        if [ "$INPUT_RELEASE_TYPE" = "rc" ]; then ARGS+=(--rc); fi
-        if [ -n "$INPUT_VERSION" ]; then ARGS+=(--version "$INPUT_VERSION"); fi
-        VERSION=$(node "${{ github.action_path }}/src/set-package-version.js" "${ARGS[@]}")
+        ARGS=(--version "$RESOLVED_VERSION" --package-json-path "$INPUT_PACKAGE_JSON_PATH" --package-name "$INPUT_PACKAGE_NAME")
+        if [ "$INPUT_RELEASE_TYPE" != 'stable' ]; then ARGS+=("--$INPUT_RELEASE_TYPE"); fi
+        node "${{ github.action_path }}/src/set-package-version.js" "${ARGS[@]}"
         echo "Updated package version to $VERSION"
-        echo "version=$VERSION" >> $GITHUB_OUTPUT
 
     - name: Figure out the correct npm tag
+      if: inputs.npm-tag == ''
       id: figure-out-npm-tag
       shell: bash
       env:
         INPUT_PACKAGE_NAME: ${{ inputs.package-name }}
         INPUT_RELEASE_TYPE: ${{ inputs.release-type }}
-        PACKAGE_VERSION: ${{ steps.set-package-version.outputs.version }}
+        INPUT_NPM_TAG: ${{ inputs.npm-tag }}
+        PACKAGE_VERSION: ${{ steps.resolve-version.outputs.version }}
       run: |
+        if [ -n "$INPUT_NPM_TAG" ]; then
+          TAG="$INPUT_NPM_TAG"
+
+          echo "Using provided npm tag: $TAG"
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          exit 0
+        fi
+
         if [ "$INPUT_RELEASE_TYPE" = "nightly" ]; then
           TAG="nightly"
         elif [ "$INPUT_RELEASE_TYPE" = "beta" ] || [ "$INPUT_RELEASE_TYPE" = "rc" ]; then
@@ -87,7 +124,7 @@ runs:
       shell: bash
       env:
         INPUT_PACKAGE_NAME: ${{ inputs.package-name }}
-        PACKAGE_VERSION: ${{ steps.set-package-version.outputs.version }}
+        PACKAGE_VERSION: ${{ steps.resolve-version.outputs.version }}
       run: |
         node "${{ github.action_path }}/src/validate-latest-version.js" "$INPUT_PACKAGE_NAME" "$PACKAGE_VERSION"
 
@@ -96,14 +133,14 @@ runs:
       shell: bash
       env:
         INPUT_PACKAGE_NAME: ${{ inputs.package-name }}
-        PACKAGE_VERSION: ${{ steps.set-package-version.outputs.version }}
+        PACKAGE_VERSION: ${{ steps.resolve-version.outputs.version }}
       run: |
         node "${{ github.action_path }}/src/validate-non-latest-version.js" "$INPUT_PACKAGE_NAME" "$PACKAGE_VERSION"
 
     - name: Print outputs
       shell: bash
       env:
-        PACKAGE_VERSION: ${{ steps.set-package-version.outputs.version }}
+        PACKAGE_VERSION: ${{ steps.resolve-version.outputs.version }}
         NPM_TAG: ${{ steps.figure-out-npm-tag.outputs.tag }}
       run: |
         echo "Version to be published: $PACKAGE_VERSION"
@@ -161,7 +198,7 @@ runs:
         npm dist-tag rm "$INPUT_PACKAGE_NAME" legacy || echo "No legacy tag to remove"
 
     - name: Configure git
-      if: inputs.release-type == 'stable'
+      if: inputs.perform-git-operations == 'true' && inputs.release-type == 'stable'
       id: configure-git
       shell: bash
       run: |
@@ -170,12 +207,12 @@ runs:
         echo "branch-name=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> $GITHUB_OUTPUT
 
     - name: Create release commit
-      if: inputs.release-type == 'stable' && steps.configure-git.outputs.branch-name != 'main'
+      if: inputs.perform-git-operations == 'true' && inputs.release-type == 'stable' && steps.configure-git.outputs.branch-name != 'main'
       shell: bash
       env:
         INPUT_PACKAGE_JSON_PATH: ${{ inputs.package-json-path }}
         INPUT_DRY_RUN: ${{ inputs.dry-run }}
-        PACKAGE_VERSION: ${{ steps.set-package-version.outputs.version }}
+        PACKAGE_VERSION: ${{ steps.resolve-version.outputs.version }}
       run: |
         git add "$INPUT_PACKAGE_JSON_PATH"
         git commit -m "Release v$PACKAGE_VERSION"
@@ -188,11 +225,11 @@ runs:
         fi
 
     - name: Create release tag
-      if: inputs.release-type == 'stable'
+      if: inputs.perform-git-operations == 'true' && inputs.release-type == 'stable'
       shell: bash
       env:
         INPUT_DRY_RUN: ${{ inputs.dry-run }}
-        PACKAGE_VERSION: ${{ steps.set-package-version.outputs.version }}
+        PACKAGE_VERSION: ${{ steps.resolve-version.outputs.version }}
       run: |
         git tag -a "v$PACKAGE_VERSION" -m "Release v$PACKAGE_VERSION"
         

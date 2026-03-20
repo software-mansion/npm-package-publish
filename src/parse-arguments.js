@@ -59,7 +59,7 @@ function parseArguments() {
         ? ReleaseType.RELEASE_CANDIDATE
         : ReleaseType.STABLE;
 
-  if (version != null) {
+  if (releaseType === ReleaseType.STABLE && version != null) {
     const versionRegex = /^(\d+)\.(\d+)\.(\d+)$/;
     if (!versionRegex.test(version)) {
       throw new Error(`Provided version "${version}" is not valid. Expected format: x.y.z`);
