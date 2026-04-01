@@ -94,27 +94,27 @@ describe('parse-arguments', () => {
 
     // Version format validation
     test('throws error for invalid version format - missing patch', () => {
-      process.argv = ['node', 'script.js', '--rc', '--version', '2.22', '--package-name', 'package-name'];
+      process.argv = ['node', 'script.js', '--version', '2.22', '--package-name', 'package-name', '--package-json-path', './package.json'];
       expect(() => parseArguments()).toThrow('Provided version "2.22" is not valid. Expected format: x.y.z');
     });
 
     test('throws error for invalid version format - letters', () => {
-      process.argv = ['node', 'script.js', '--rc', '--version', '2.22.a', '--package-name', 'package-name'];
+      process.argv = ['node', 'script.js', '--version', '2.22.a', '--package-name', 'package-name', '--package-json-path', './package.json'];
       expect(() => parseArguments()).toThrow('Provided version "2.22.a" is not valid. Expected format: x.y.z');
     });
 
     test('throws error for invalid version format - extra parts', () => {
-      process.argv = ['node', 'script.js', '--rc', '--version', '2.22.0.1', '--package-name', 'package-name'];
+      process.argv = ['node', 'script.js', '--version', '2.22.0.1', '--package-name', 'package-name', '--package-json-path', './package.json'];
       expect(() => parseArguments()).toThrow('Provided version "2.22.0.1" is not valid. Expected format: x.y.z');
     });
 
     test('throws error for invalid version format - pre-release suffix', () => {
-      process.argv = ['node', 'script.js', '--rc', '--version', '2.22.0-rc.1', '--package-name', 'package-name'];
+      process.argv = ['node', 'script.js', '--version', '2.22.0-rc.1', '--package-name', 'package-name', '--package-json-path', './package.json'];
       expect(() => parseArguments()).toThrow('Provided version "2.22.0-rc.1" is not valid. Expected format: x.y.z');
     });
 
     test('throws error for invalid version format - empty string', () => {
-      process.argv = ['node', 'script.js', '--rc', '--version', '', '--package-name', 'package-name'];
+      process.argv = ['node', 'script.js', '--version', '', '--package-name', 'package-name', '--package-json-path', './package.json'];
       expect(() => parseArguments()).toThrow('Provided version "" is not valid. Expected format: x.y.z');
     });
 
