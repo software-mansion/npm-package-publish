@@ -20,7 +20,7 @@ inputs:
     description: NPM tag to publish under (usually inferred from release type and version).
     default: ""
   perform-git-operations:
-    description: Whether to perform git operations (committing version change, pushing tags). Only applicable when not doing a dry run.
+    description: Whether to perform git operations (committing version change, pushing tags).
     default: "true"
   dry-run:
     description: Whether to perform a dry run of the publish.
@@ -55,7 +55,7 @@ runs:
       shell: bash
       env:
         INPUT_PACKAGE_NAME: ${{ inputs.package-name }}
-        INPUT_LOCAL_VERSION_GETTER_SCRIPT: ${{ inputs.local-version-getter-script }}
+        INPUT_VERSION_GETTER_SCRIPT: ${{ inputs.version-getter-script }}
         INPUT_RELEASE_TYPE: ${{ inputs.release-type }}
         INPUT_VERSION: ${{ inputs.version }}
         INPUT_PACKAGE_JSON_PATH: ${{ inputs.package-json-path }}
@@ -63,8 +63,8 @@ runs:
         ARGS=(--package-name "$INPUT_PACKAGE_NAME" --package-json-path "$INPUT_PACKAGE_JSON_PATH")
         if [ "$INPUT_RELEASE_TYPE" != 'stable' ]; then ARGS+=("--$INPUT_RELEASE_TYPE"); fi
         if [ -n "$INPUT_VERSION" ]; then ARGS+=(--version "$INPUT_VERSION"); fi
-        if [ -n "$INPUT_LOCAL_VERSION_GETTER_SCRIPT" ]; then
-          VERSION=$(node "$INPUT_LOCAL_VERSION_GETTER_SCRIPT" "${ARGS[@]}")
+        if [ -n "$INPUT_VERSION_GETTER_SCRIPT" ]; then
+          VERSION=$(node "$INPUT_VERSION_GETTER_SCRIPT" "${ARGS[@]}")
           echo "Resolved version from custom script: $VERSION"
         else
           VERSION=$(node "${{ github.action_path }}/src/get-version.js" "${ARGS[@]}")
@@ -84,10 +84,9 @@ runs:
         ARGS=(--version "$RESOLVED_VERSION" --package-json-path "$INPUT_PACKAGE_JSON_PATH" --package-name "$INPUT_PACKAGE_NAME")
         if [ "$INPUT_RELEASE_TYPE" != 'stable' ]; then ARGS+=("--$INPUT_RELEASE_TYPE"); fi
         node "${{ github.action_path }}/src/set-package-version.js" "${ARGS[@]}"
-        echo "Updated package version to $VERSION"
+        echo "Updated package version to $RESOLVED_VERSION"
 
     - name: Figure out the correct npm tag
-      if: inputs.npm-tag == ''
       id: figure-out-npm-tag
       shell: bash
       env:
@@ -176,7 +175,7 @@ runs:
       uses: actions/upload-artifact@v4
       with:
         name: ${{ env.PACKAGE_NAME }}
-        path: '${{ env.PACKAGE_DIR }}/${{ env.PACKAGE_NAME }}'
+        path: "${{ env.PACKAGE_DIR }}/${{ env.PACKAGE_NAME }}"
 
     - name: Publish npm package
       shell: bash
@@ -216,7 +215,7 @@ runs:
       run: |
         git add "$INPUT_PACKAGE_JSON_PATH"
         git commit -m "Release v$PACKAGE_VERSION"
-        
+
         if [ "$INPUT_DRY_RUN" = 'false' ]; then
           echo "Pushing release commit to origin..."
           git push
@@ -232,7 +231,7 @@ runs:
         PACKAGE_VERSION: ${{ steps.resolve-version.outputs.version }}
       run: |
         git tag -a "v$PACKAGE_VERSION" -m "Release v$PACKAGE_VERSION"
-        
+
         if [ "$INPUT_DRY_RUN" = 'false' ]; then
           echo "Pushing tag to origin..."
           git push origin "v$PACKAGE_VERSION"
