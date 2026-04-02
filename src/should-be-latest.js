@@ -23,9 +23,11 @@ function shouldBeLatest(packageName, version) {
 
   const [major, minor, patch] = parseVersion(latestVersion);
 
-  return (newMajor === major && newMinor === minor && newPatch >= patch + 1) ||
-         (newMajor === major && newMinor >= minor + 1) ||
-         (newMajor >= major + 1);
+  return (
+    (newMajor === major && newMinor === minor && newPatch >= patch + 1) ||
+    (newMajor === major && newMinor >= minor + 1) ||
+    newMajor >= major + 1
+  );
 }
 
 if (require.main === module) {

@@ -49,7 +49,10 @@ function parseArguments() {
     }
   }
 
-  assert([isNightly, isBeta, isReleaseCandidate].filter(Boolean).length <= 1, 'Release flags --nightly, --beta, and --rc are mutually exclusive; specify at most one');
+  assert(
+    [isNightly, isBeta, isReleaseCandidate].filter(Boolean).length <= 1,
+    'Release flags --nightly, --beta, and --rc are mutually exclusive; specify at most one',
+  );
 
   const releaseType = isNightly
     ? ReleaseType.NIGHTLY

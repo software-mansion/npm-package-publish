@@ -1,5 +1,11 @@
 const { execSync } = require('child_process');
-const { getStableBranchVersion, getLatestVersion, getNextPreReleaseVersion, getNextStableVersion, parseVersion } = require('./version-utils');
+const {
+  getStableBranchVersion,
+  getLatestVersion,
+  getNextPreReleaseVersion,
+  getNextStableVersion,
+  parseVersion,
+} = require('./version-utils');
 const { ReleaseType } = require('./parse-arguments');
 const { getPackageVersionByTag } = require('./npm-utils');
 
@@ -17,8 +23,8 @@ function getVersion(packageName, releaseType, versionHint = null) {
       } catch (error) {
         throw new Error(
           `No 'latest' version found for ${packageName} on npm. ` +
-          `Provide an explicit 'version' input when publishing nightlies for a new package.`,
-          { cause: error }
+            `Provide an explicit 'version' input when publishing nightlies for a new package.`,
+          { cause: error },
         );
       }
       [major, minor] = latestVersion;
@@ -46,7 +52,9 @@ function getVersion(packageName, releaseType, versionHint = null) {
 
     // Don't publish the same commit twice if the version is the same
     if (latestNightlySHA === currentSHA && latestNightlyVersion === versionToUse) {
-      throw new Error(`Latest nightly version ${latestNightlyVersion} SHA ${latestNightlySHA} is the same as current SHA ${currentSHA}`);
+      throw new Error(
+        `Latest nightly version ${latestNightlyVersion} SHA ${latestNightlySHA} is the same as current SHA ${currentSHA}`,
+      );
     }
 
     const now = new Date();
@@ -67,7 +75,9 @@ function getVersion(packageName, releaseType, versionHint = null) {
     return getNextPreReleaseVersion(packageName, releaseType, versionToUse);
   }
 
-  const [major, minor, patch] = versionHint ? parseVersion(versionHint) : getNextStableVersion(packageName);
+  const [major, minor, patch] = versionHint
+    ? parseVersion(versionHint)
+    : getNextStableVersion(packageName);
   return `${major}.${minor}.${patch}`;
 }
 
