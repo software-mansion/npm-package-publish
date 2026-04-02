@@ -61,7 +61,7 @@ describe('validate-non-latest-version', () => {
       getPackageVersionByTag.mockReturnValue('2.30.0');
 
       expect(() => validateNonLatestVersion('package-name', '2.30.0')).toThrow(
-        'Version 2.30.0 already exists in the npm registry'
+        'Version 2.30.0 already exists in the npm registry',
       );
     });
 
@@ -69,7 +69,7 @@ describe('validate-non-latest-version', () => {
       getPackageVersionByTag.mockReturnValue('2.30.0');
 
       expect(() => validateNonLatestVersion('package-name', '2.30.0-rc.1')).toThrow(
-        'Version 2.30.0 already exists in the npm registry'
+        'Version 2.30.0 already exists in the npm registry',
       );
     });
 
@@ -77,16 +77,16 @@ describe('validate-non-latest-version', () => {
       getPackageVersionByTag.mockReturnValue('2.30.0');
 
       expect(() => validateNonLatestVersion('package-name', '2.30.0-beta.5')).toThrow(
-        'Version 2.30.0 already exists in the npm registry'
+        'Version 2.30.0 already exists in the npm registry',
       );
     });
 
     test('throws error when base version of nightly already exists', () => {
       getPackageVersionByTag.mockReturnValue('2.30.0');
 
-      expect(() => validateNonLatestVersion('package-name', '2.30.0-nightly-20260129-abc123def')).toThrow(
-        'Version 2.30.0 already exists in the npm registry'
-      );
+      expect(() =>
+        validateNonLatestVersion('package-name', '2.30.0-nightly-20260129-abc123def'),
+      ).toThrow('Version 2.30.0 already exists in the npm registry');
     });
 
     // Edge cases

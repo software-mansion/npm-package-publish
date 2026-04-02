@@ -16,21 +16,23 @@ describe('validate-latest-version', () => {
     test('throws error for rc pre-release version', () => {
       getPackageVersionByTag.mockReturnValue('2.22.0');
       expect(() => validateLatestVersion('package-name', '2.22.1-rc.1')).toThrow(
-        'Pre-release version 2.22.1-rc.1 cannot be the latest version'
+        'Pre-release version 2.22.1-rc.1 cannot be the latest version',
       );
     });
 
     test('throws error for beta pre-release version', () => {
       getPackageVersionByTag.mockReturnValue('2.22.0');
       expect(() => validateLatestVersion('package-name', '2.22.1-beta.1')).toThrow(
-        'Pre-release version 2.22.1-beta.1 cannot be the latest version'
+        'Pre-release version 2.22.1-beta.1 cannot be the latest version',
       );
     });
 
     test('throws error for nightly version', () => {
       getPackageVersionByTag.mockReturnValue('2.22.0');
-      expect(() => validateLatestVersion('package-name', '2.23.0-nightly-20260129-abc123def')).toThrow(
-        'Pre-release version 2.23.0-nightly-20260129-abc123def cannot be the latest version'
+      expect(() =>
+        validateLatestVersion('package-name', '2.23.0-nightly-20260129-abc123def'),
+      ).toThrow(
+        'Pre-release version 2.23.0-nightly-20260129-abc123def cannot be the latest version',
       );
     });
 
@@ -38,7 +40,7 @@ describe('validate-latest-version', () => {
     test('throws error when new major is less than current', () => {
       getPackageVersionByTag.mockReturnValue('2.22.0');
       expect(() => validateLatestVersion('package-name', '1.0.0')).toThrow(
-        'New major version 1 is less than latest major version 2'
+        'New major version 1 is less than latest major version 2',
       );
     });
 
@@ -59,21 +61,21 @@ describe('validate-latest-version', () => {
     test('throws error for skipped patch version', () => {
       getPackageVersionByTag.mockReturnValue('2.22.0');
       expect(() => validateLatestVersion('package-name', '2.22.2')).toThrow(
-        'Version 2.22.2 is not a valid latest version based on latest published version 2.22.0'
+        'Version 2.22.2 is not a valid latest version based on latest published version 2.22.0',
       );
     });
 
     test('throws error for same patch version', () => {
       getPackageVersionByTag.mockReturnValue('2.22.0');
       expect(() => validateLatestVersion('package-name', '2.22.0')).toThrow(
-        'Version 2.22.0 is not a valid latest version based on latest published version 2.22.0'
+        'Version 2.22.0 is not a valid latest version based on latest published version 2.22.0',
       );
     });
 
     test('throws error for previous patch version', () => {
       getPackageVersionByTag.mockReturnValue('2.22.5');
       expect(() => validateLatestVersion('package-name', '2.22.4')).toThrow(
-        'Version 2.22.4 is not a valid latest version based on latest published version 2.22.5'
+        'Version 2.22.4 is not a valid latest version based on latest published version 2.22.5',
       );
     });
 
@@ -94,28 +96,28 @@ describe('validate-latest-version', () => {
     test('throws error for next minor with non-zero patch', () => {
       getPackageVersionByTag.mockReturnValue('2.22.0');
       expect(() => validateLatestVersion('package-name', '2.23.1')).toThrow(
-        'Version 2.23.1 is not a valid latest version based on latest published version 2.22.0'
+        'Version 2.23.1 is not a valid latest version based on latest published version 2.22.0',
       );
     });
 
     test('throws error for skipped minor version', () => {
       getPackageVersionByTag.mockReturnValue('2.22.0');
       expect(() => validateLatestVersion('package-name', '2.24.0')).toThrow(
-        'Version 2.24.0 is not a valid latest version based on latest published version 2.22.0'
+        'Version 2.24.0 is not a valid latest version based on latest published version 2.22.0',
       );
     });
 
     test('throws error for previous minor version', () => {
       getPackageVersionByTag.mockReturnValue('2.22.0');
       expect(() => validateLatestVersion('package-name', '2.21.0')).toThrow(
-        'Version 2.21.0 is not a valid latest version based on latest published version 2.22.0'
+        'Version 2.21.0 is not a valid latest version based on latest published version 2.22.0',
       );
     });
 
     test('throws error for same minor with lower patch', () => {
       getPackageVersionByTag.mockReturnValue('2.22.5');
       expect(() => validateLatestVersion('package-name', '2.22.3')).toThrow(
-        'Version 2.22.3 is not a valid latest version based on latest published version 2.22.5'
+        'Version 2.22.3 is not a valid latest version based on latest published version 2.22.5',
       );
     });
 
@@ -129,20 +131,24 @@ describe('validate-latest-version', () => {
     test('throws error for minor bump with patch 1', () => {
       getPackageVersionByTag.mockReturnValue('2.22.0');
       expect(() => validateLatestVersion('package-name', '2.23.1')).toThrow(
-        'Version 2.23.1 is not a valid latest version based on latest published version 2.22.0'
+        'Version 2.23.1 is not a valid latest version based on latest published version 2.22.0',
       );
     });
 
     test('returns true when the error is a package-not-found error (first publish)', () => {
       const error = new Error('Package not found');
-      getPackageVersionByTag.mockImplementation(() => { throw error; });
+      getPackageVersionByTag.mockImplementation(() => {
+        throw error;
+      });
       isNpmNotFoundError.mockReturnValue(true);
       expect(validateLatestVersion('new-package', '1.0.0')).toBe(true);
     });
 
     test('re-throws errors that are not package-not-found', () => {
       const error = new Error('network timeout');
-      getPackageVersionByTag.mockImplementation(() => { throw error; });
+      getPackageVersionByTag.mockImplementation(() => {
+        throw error;
+      });
       isNpmNotFoundError.mockReturnValue(false);
       expect(() => validateLatestVersion('new-package', '1.0.0')).toThrow('network timeout');
     });
@@ -150,7 +156,7 @@ describe('validate-latest-version', () => {
     test('still rejects pre-release versions even when no latest tag exists', () => {
       // The pre-release check runs before the npm call, so getPackageVersionByTag is never reached.
       expect(() => validateLatestVersion('new-package', '1.0.0-beta.1')).toThrow(
-        'Pre-release version 1.0.0-beta.1 cannot be the latest version'
+        'Pre-release version 1.0.0-beta.1 cannot be the latest version',
       );
     });
   });

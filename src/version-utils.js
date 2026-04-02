@@ -1,5 +1,9 @@
 const { execSync } = require('child_process');
-const { getPackageVersionByTag, getNextPatchVersion, getNextPreReleaseIndex } = require('./npm-utils');
+const {
+  getPackageVersionByTag,
+  getNextPatchVersion,
+  getNextPreReleaseIndex,
+} = require('./npm-utils');
 
 const VERSION_REGEX = /^(\d+)\.(\d+)\.(\d+)(-.*)?$/;
 const BRANCH_REGEX = /^(\d+)\.(\d+)-stable$/;
@@ -25,7 +29,7 @@ function getStableBranchVersion() {
 
 function getLatestVersion(packageName) {
   const latestVersion = getPackageVersionByTag(packageName, 'latest');
-  
+
   try {
     return parseVersion(latestVersion);
   } catch (error) {

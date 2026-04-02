@@ -26,12 +26,15 @@ function validateLatestVersion(packageName, version) {
     throw new Error(`New major version ${newMajor} is less than latest major version ${major}`);
   }
 
-  const isValid = (newMajor === major && newMinor === minor && newPatch === patch + 1) ||
-         (newMajor === major && newMinor === minor + 1 && newPatch === 0) ||
-         (newMajor === major + 1 && newMinor === 0 && newPatch === 0);
+  const isValid =
+    (newMajor === major && newMinor === minor && newPatch === patch + 1) ||
+    (newMajor === major && newMinor === minor + 1 && newPatch === 0) ||
+    (newMajor === major + 1 && newMinor === 0 && newPatch === 0);
 
   if (!isValid) {
-    throw new Error(`Version ${version} is not a valid latest version based on latest published version ${latestVersion}`);
+    throw new Error(
+      `Version ${version} is not a valid latest version based on latest published version ${latestVersion}`,
+    );
   }
 
   return true;

@@ -10,9 +10,18 @@ jest.mock('child_process', () => ({
   execSync: jest.fn(),
 }));
 
-const { getPackageVersionByTag, getNextPatchVersion, getNextPreReleaseIndex } = require('../npm-utils');
+const {
+  getPackageVersionByTag,
+  getNextPatchVersion,
+  getNextPreReleaseIndex,
+} = require('../npm-utils');
 const { execSync } = require('child_process');
-const { getStableBranchVersion, getLatestVersion, getNextStableVersion, getNextPreReleaseVersion } = require('../version-utils');
+const {
+  getStableBranchVersion,
+  getLatestVersion,
+  getNextStableVersion,
+  getNextPreReleaseVersion,
+} = require('../version-utils');
 
 describe('version-utils', () => {
   describe('parseVersion', () => {
@@ -86,7 +95,9 @@ describe('version-utils', () => {
 
     test('throws error for non-stable branch', () => {
       execSync.mockReturnValue(Buffer.from('main\n'));
-      expect(() => getStableBranchVersion()).toThrow('Failed to parse stable version from branch: main');
+      expect(() => getStableBranchVersion()).toThrow(
+        'Failed to parse stable version from branch: main',
+      );
     });
   });
 
@@ -110,7 +121,9 @@ describe('version-utils', () => {
 
     test('throws error for invalid latest version', () => {
       getPackageVersionByTag.mockReturnValue('invalid');
-      expect(() => getLatestVersion('package-name')).toThrow('Failed to parse latest version: invalid');
+      expect(() => getLatestVersion('package-name')).toThrow(
+        'Failed to parse latest version: invalid',
+      );
     });
   });
 

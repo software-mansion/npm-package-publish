@@ -15,7 +15,13 @@ jest.mock('../npm-utils', () => ({
 }));
 
 const { execSync } = require('child_process');
-const { getStableBranchVersion, getLatestVersion, getNextPreReleaseVersion, getNextStableVersion, parseVersion } = require('../version-utils');
+const {
+  getStableBranchVersion,
+  getLatestVersion,
+  getNextPreReleaseVersion,
+  getNextStableVersion,
+  parseVersion,
+} = require('../version-utils');
 const { getPackageVersionByTag } = require('../npm-utils');
 const { getVersion } = require('../get-version');
 const { ReleaseType } = require('../parse-arguments');
@@ -107,7 +113,7 @@ describe('get-version', () => {
         getPackageVersionByTag.mockReturnValue('3.1.0-nightly-20261205-abc123def');
 
         expect(() => getVersion('package-name', ReleaseType.NIGHTLY)).toThrow(
-          'Latest nightly version 3.1.0 SHA abc123def is the same as current SHA abc123def'
+          'Latest nightly version 3.1.0 SHA abc123def is the same as current SHA abc123def',
         );
       });
 
@@ -163,7 +169,7 @@ describe('get-version', () => {
         getPackageVersionByTag.mockReturnValue('4.0.0-nightly-20260129-abc123def');
 
         expect(() => getVersion('package-name', ReleaseType.NIGHTLY, '4.0.0')).toThrow(
-          'Latest nightly version 4.0.0 SHA abc123def is the same as current SHA abc123def'
+          'Latest nightly version 4.0.0 SHA abc123def is the same as current SHA abc123def',
         );
       });
 
@@ -174,7 +180,7 @@ describe('get-version', () => {
         execSync.mockReturnValue(Buffer.from('abc123def\n'));
 
         expect(() => getVersion('new-package', ReleaseType.NIGHTLY)).toThrow(
-          "No 'latest' version found for new-package on npm. Provide an explicit 'version' input when publishing nightlies for a new package."
+          "No 'latest' version found for new-package on npm. Provide an explicit 'version' input when publishing nightlies for a new package.",
         );
       });
 
@@ -215,7 +221,11 @@ describe('get-version', () => {
         const result = getVersion('package-name', ReleaseType.BETA, '2.22.0');
 
         expect(result).toBe('2.22.0-beta.1');
-        expect(getNextPreReleaseVersion).toHaveBeenCalledWith('package-name', ReleaseType.BETA, '2.22.0');
+        expect(getNextPreReleaseVersion).toHaveBeenCalledWith(
+          'package-name',
+          ReleaseType.BETA,
+          '2.22.0',
+        );
       });
 
       test('derives base version from stable branch when not provided', () => {
@@ -226,7 +236,11 @@ describe('get-version', () => {
 
         expect(result).toBe('2.23.0-beta.1');
         expect(getStableBranchVersion).toHaveBeenCalled();
-        expect(getNextPreReleaseVersion).toHaveBeenCalledWith('package-name', ReleaseType.BETA, '2.23.0');
+        expect(getNextPreReleaseVersion).toHaveBeenCalledWith(
+          'package-name',
+          ReleaseType.BETA,
+          '2.23.0',
+        );
       });
 
       test('returns incremented beta version', () => {
@@ -246,7 +260,11 @@ describe('get-version', () => {
         const result = getVersion('package-name', ReleaseType.RELEASE_CANDIDATE, '2.22.0');
 
         expect(result).toBe('2.22.0-rc.1');
-        expect(getNextPreReleaseVersion).toHaveBeenCalledWith('package-name', ReleaseType.RELEASE_CANDIDATE, '2.22.0');
+        expect(getNextPreReleaseVersion).toHaveBeenCalledWith(
+          'package-name',
+          ReleaseType.RELEASE_CANDIDATE,
+          '2.22.0',
+        );
       });
 
       test('derives base version from stable branch when not provided', () => {
@@ -257,7 +275,11 @@ describe('get-version', () => {
 
         expect(result).toBe('2.24.0-rc.1');
         expect(getStableBranchVersion).toHaveBeenCalled();
-        expect(getNextPreReleaseVersion).toHaveBeenCalledWith('package-name', ReleaseType.RELEASE_CANDIDATE, '2.24.0');
+        expect(getNextPreReleaseVersion).toHaveBeenCalledWith(
+          'package-name',
+          ReleaseType.RELEASE_CANDIDATE,
+          '2.24.0',
+        );
       });
 
       test('returns incremented rc version', () => {

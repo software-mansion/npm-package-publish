@@ -17,7 +17,7 @@ function withRetry(fn, { retries = RETRY_COUNT, baseDelayMs = BASE_RETRY_DELAY_M
     } catch (error) {
       lastError = error;
       if (attempt < retries) {
-        sleep(baseDelayMs * (2 ** attempt));
+        sleep(baseDelayMs * 2 ** attempt);
       }
     }
   }
@@ -26,17 +26,19 @@ function withRetry(fn, { retries = RETRY_COUNT, baseDelayMs = BASE_RETRY_DELAY_M
 
 function getPackageVersionByTag(packageName, tag) {
   const npmString =
-    tag != null
-      ? `npm view ${packageName}@${tag} version`
-      : `npm view ${packageName} version`;
+    tag != null ? `npm view ${packageName}@${tag} version` : `npm view ${packageName} version`;
 
   try {
     const result = withRetry(() =>
-      execSync(npmString, { stdio: ['ignore', 'pipe', 'pipe'], timeout: 20000 })
-    ).toString().trim();
+      execSync(npmString, { stdio: ['ignore', 'pipe', 'pipe'], timeout: 20000 }),
+    )
+      .toString()
+      .trim();
     return result;
   } catch (error) {
-    throw new Error(`Failed to get package version for ${packageName} by tag: ${tag}`, { cause: error });
+    throw new Error(`Failed to get package version for ${packageName} by tag: ${tag}`, {
+      cause: error,
+    });
   }
 }
 
@@ -52,11 +54,13 @@ function getNextPatchVersion(packageName, major, minor) {
   let rawResult;
   try {
     rawResult = withRetry(() =>
-      execSync(
-        `npm view ${packageName}@"${range}" version --json`,
-        { stdio: ['ignore', 'pipe', 'pipe'], timeout: 20000 }
-      )
-    ).toString().trim();
+      execSync(`npm view ${packageName}@"${range}" version --json`, {
+        stdio: ['ignore', 'pipe', 'pipe'],
+        timeout: 20000,
+      }),
+    )
+      .toString()
+      .trim();
   } catch (error) {
     if (isNpmNotFoundError(error)) {
       // No versions published yet for this major.minor range
@@ -67,7 +71,7 @@ function getNextPatchVersion(packageName, major, minor) {
 
   const parsed = JSON.parse(rawResult);
   const versions = Array.isArray(parsed) ? parsed : [parsed];
-  const patches = versions.map(v => {
+  const patches = versions.map((v) => {
     const patch = Number(v.split('.')[2]);
     if (Number.isNaN(patch)) {
       throw new Error(`Unexpected version format in npm output: ${v}`);
@@ -89,11 +93,13 @@ function getNextPreReleaseIndex(packageName, baseVersion, releaseType) {
   let rawResult;
   try {
     rawResult = withRetry(() =>
-      execSync(
-        `npm view "${packageName}@${range}" version --json`,
-        { stdio: ['ignore', 'pipe', 'pipe'], timeout: 20000 }
-      )
-    ).toString().trim();
+      execSync(`npm view "${packageName}@${range}" version --json`, {
+        stdio: ['ignore', 'pipe', 'pipe'],
+        timeout: 20000,
+      }),
+    )
+      .toString()
+      .trim();
   } catch (error) {
     if (isNpmNotFoundError(error)) {
       return 1;
@@ -104,11 +110,11 @@ function getNextPreReleaseIndex(packageName, baseVersion, releaseType) {
   const parsed = JSON.parse(rawResult);
   const allVersions = Array.isArray(parsed) ? parsed : [parsed];
   const indices = allVersions
-    .map(v => {
+    .map((v) => {
       const match = v.match(versionRegex);
       return match ? Number(match[1]) : null;
     })
-    .filter(i => i !== null);
+    .filter((i) => i !== null);
 
   if (indices.length === 0) {
     return 1;
