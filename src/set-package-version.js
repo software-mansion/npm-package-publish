@@ -7,9 +7,6 @@ function setPackageVersion() {
   const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
   packageJson.version = version;
   fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
-
-  // Intentional, this is consumed by the action
-  console.log(version);
 }
 
 if (require.main === module) {
