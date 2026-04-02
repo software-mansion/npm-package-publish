@@ -21,7 +21,7 @@ A GitHub composite action that builds and publishes an npm package with automati
 | `package-json-path` | Yes | — | Path to the `package.json` file that should have its `version` field updated. |
 | `release-type` | No | `nightly` | Release type. One of: `stable`, `nightly`, `beta`, `rc`. |
 | `version` | No | - | Explicit version to publish in `x.y.z` format. Typically inferred from branch name for stable releases; not applicable for nightly. |
-| `version-getter-script` | No | - | Path to a custom script that determines the version to publish. When provided, the action runs this script instead of the built-in version resolution logic. |
+| `version-getter-script` | No | - | Path to a custom script that determines the version to publish. When provided, the action runs this script instead of the built-in version resolution logic. It receives `--package-name <package-name>`, `--package-json-path <package-json-path>`, `--version <version>` and release type (`--nightly`, `--beta`, `--rc`) as parameters and should print to STDOUT the resolved version value. |
 | `npm-tag` | No | - | Explicit npm dist-tag to publish under. When provided, skips automatic tag resolution entirely. |
 | `perform-git-operations` | No | `true` | Whether to perform git operations (committing the version change and pushing tags). |
 | `dry-run` | No | `true` | When `true`, runs `npm publish --dry-run` and skips `git push`. Set to `false` for a real release. |

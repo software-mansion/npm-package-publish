@@ -25,7 +25,8 @@ function validateNonLatestVersion(packageName, version) {
 if (require.main === module) {
   const packageName = process.argv[2];
   const version = process.argv[3];
-  console.log(validateNonLatestVersion(packageName, version));
+  // Print to STDOUT for the action to consume it.
+  process.stdout.write(validateNonLatestVersion(packageName, version) ? 'true' : 'false');
 }
 
 module.exports = {

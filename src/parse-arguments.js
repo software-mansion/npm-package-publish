@@ -8,7 +8,9 @@ const ReleaseType = {
 };
 
 function parseArguments() {
+  /** Used when setting the version, in `set-package-version.js` script. */
   let version = null;
+  /** Used when inferring the version, in `get-version.js` script. */
   let versionHint = null;
   let isNightly = false;
   let isBeta = false;

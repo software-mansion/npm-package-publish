@@ -63,7 +63,7 @@ runs:
         ARGS=(--package-name "$INPUT_PACKAGE_NAME" --package-json-path "$INPUT_PACKAGE_JSON_PATH")
         if [ "$INPUT_RELEASE_TYPE" != 'stable' ]; then ARGS+=("--$INPUT_RELEASE_TYPE"); fi
         if [ -n "$INPUT_VERSION_GETTER_SCRIPT" ]; then
-        if [ -n "$INPUT_VERSION" ]; then ARGS+=(--version "$INPUT_VERSION"); fi
+          if [ -n "$INPUT_VERSION" ]; then ARGS+=(--version "$INPUT_VERSION"); fi
           VERSION=$(node "$INPUT_VERSION_GETTER_SCRIPT" "${ARGS[@]}")
           echo "Resolved version from custom script: $VERSION"
         else
