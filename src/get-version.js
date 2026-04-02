@@ -88,7 +88,6 @@ module.exports = {
 if (require.main === module) {
   const { releaseType, versionHint, packageName } = parseArguments();
   const version = getVersion(packageName, releaseType, versionHint);
-
-  // Print to STDOUT for the action to consume it.
-  process.stdout.write(version);
+  // Print to stdout for the action to consume it.
+  console.log(version);
 }
