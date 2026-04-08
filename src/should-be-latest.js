@@ -33,6 +33,7 @@ function shouldBeLatest(packageName, version) {
 if (require.main === module) {
   const packageName = process.argv[2];
   const version = process.argv[3];
+  // Print to STDOUT for the action to consume it.
   console.log(shouldBeLatest(packageName, version));
 }
 

@@ -8,7 +8,10 @@ const ReleaseType = {
 };
 
 function parseArguments() {
+  /** Used when setting the version, in `set-package-version.js` script. */
   let version = null;
+  /** Used when inferring the version, in `get-version.js` script. */
+  let versionHint = null;
   let isNightly = false;
   let isBeta = false;
   let isReleaseCandidate = false;
@@ -29,6 +32,13 @@ function parseArguments() {
         i++;
       } else {
         throw new Error('Expected a version after --version');
+      }
+    } else if (arg === '--version-hint') {
+      if (i + 1 < process.argv.length) {
+        versionHint = process.argv[i + 1];
+        i++;
+      } else {
+        throw new Error('Expected a version hint after --version-hint');
       }
     } else if (arg === '--package-name') {
       if (i + 1 < process.argv.length) {
@@ -62,17 +72,42 @@ function parseArguments() {
         ? ReleaseType.RELEASE_CANDIDATE
         : ReleaseType.STABLE;
 
+  if (versionHint != null) {
+    validateVersionHintFormat(versionHint);
+  }
+
   if (version != null) {
-    const versionRegex = /^(\d+)\.(\d+)\.(\d+)$/;
-    if (!versionRegex.test(version)) {
-      throw new Error(`Provided version "${version}" is not valid. Expected format: x.y.z`);
-    }
+    validateVersionForReleaseType(version, releaseType);
   }
 
   assert(packageName != null, 'Missing required argument: --package-name');
   assert(packageJsonPath != null, 'Missing required argument: --package-json-path');
 
-  return { releaseType, version, packageName, packageJsonPath };
+  return { releaseType, version, versionHint, packageName, packageJsonPath };
+}
+
+function validateVersionHintFormat(versionHint) {
+  const versionHintRegex = /^(\d+)\.(\d+)\.(\d+)$/;
+  if (!versionHintRegex.test(versionHint)) {
+    throw new Error(`Provided version hint "${versionHint}" is not valid. Expected format: x.y.z`);
+  }
+}
+
+function validateVersionForReleaseType(version, releaseType) {
+  let versionRegex;
+  if (releaseType === ReleaseType.STABLE) {
+    versionRegex = /^(\d+)\.(\d+)\.(\d+)$/;
+  } else if (releaseType === ReleaseType.BETA) {
+    versionRegex = /^(\d+)\.(\d+)\.(\d+)-beta\.\d+$/;
+  } else if (releaseType === ReleaseType.RELEASE_CANDIDATE) {
+    versionRegex = /^(\d+)\.(\d+)\.(\d+)-rc\.\d+$/;
+  } else {
+    versionRegex = /^(\d+)\.(\d+)\.(\d+)-nightly.*$/;
+  }
+
+  if (!versionRegex.test(version)) {
+    throw new Error(`Version "${version}" is not valid for release type "${releaseType}"`);
+  }
 }
 
 module.exports = {

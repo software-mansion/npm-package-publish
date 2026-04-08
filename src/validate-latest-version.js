@@ -43,6 +43,7 @@ function validateLatestVersion(packageName, version) {
 if (require.main === module) {
   const packageName = process.argv[2];
   const version = process.argv[3];
+  // Print to stdout for the action to consume it.
   console.log(validateLatestVersion(packageName, version));
 }
 
