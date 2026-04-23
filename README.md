@@ -10,7 +10,7 @@ A GitHub composite action that builds and publishes an npm package with automati
    - `stable` — uses the stable version inferred from the branch name (assumes `x.y-stable` format for branch name), or a manually provided version
 2. **npm tag resolution** — Automatically assigns the correct dist-tag (`nightly`, `next`, `latest`) based on the release type and whether the version is newer than what is currently tagged `latest` on the registry.
 3. **Validation** — Validates that the version being published is sane relative to what already exists on the registry.
-4. **Build & publish** — Runs `npm pack` in the package directory, uploads the `.tgz` artifact to GitHub, and publishes it via `npm publish --provenance`.
+4. **Build & publish** — Runs `pack` in the package directory using the configured package manager (`npm` or `pnpm`), uploads the `.tgz` artifact to GitHub, and publishes with `--provenance`.
 5. **Git bookkeeping** (stable only) — Creates a `Release vX.Y.Z` commit and an annotated git tag, then pushes them (unless `dry-run` is `true` or the branch is `main`).
 
 ## Inputs
@@ -26,6 +26,7 @@ A GitHub composite action that builds and publishes an npm package with automati
 | `perform-git-operations` | No | `true` | Whether to perform git operations (committing the version change and pushing tags). |
 | `dry-run` | No | `true` | When `true`, runs `npm publish --dry-run` and skips `git push`. Set to `false` for a real release. |
 | `install-dependencies-command` | No | `yarn install --immutable` | Command used to install project dependencies before building. |
+| `package-manager` | No | `npm` | Package manager to use for packing and publishing (`npm` or `pnpm`). Registry queries always use npm. When using `pnpm`, ensure it is installed (e.g. via `corepack`) and is version 9.7.0 or later for `--provenance` support. |
 
 ## Setup guide
 

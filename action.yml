@@ -28,6 +28,9 @@ inputs:
   install-dependencies-command:
     description: Command to install dependencies.
     default: "yarn install --immutable"
+  package-manager:
+    description: Package manager to use for packing and publishing (npm or pnpm). Registry queries always use npm.
+    default: "npm"
 
 runs:
   using: composite
@@ -36,9 +39,26 @@ runs:
       shell: bash
       env:
         INPUT_PACKAGE_JSON_PATH: ${{ inputs.package-json-path }}
+        INPUT_PACKAGE_MANAGER: ${{ inputs.package-manager }}
       run: |
-        echo "PACKAGE_NAME=PLACEHOLDER" >> $GITHUB_ENV
+        if [ "$INPUT_PACKAGE_MANAGER" != "npm" ] && [ "$INPUT_PACKAGE_MANAGER" != "pnpm" ]; then
+          echo "Invalid package manager: $INPUT_PACKAGE_MANAGER. Must be 'npm' or 'pnpm'."
+          exit 1
+        fi
         echo "PACKAGE_DIR=$(dirname "$INPUT_PACKAGE_JSON_PATH")" >> $GITHUB_ENV
+        echo "PM=$INPUT_PACKAGE_MANAGER" >> $GITHUB_ENV
+
+    - name: Validate package name
+      shell: bash
+      env:
+        INPUT_PACKAGE_NAME: ${{ inputs.package-name }}
+        INPUT_PACKAGE_JSON_PATH: ${{ inputs.package-json-path }}
+      run: |
+        ACTUAL_NAME=$(node -p "require(require('path').resolve(process.env.INPUT_PACKAGE_JSON_PATH)).name")
+        if [ "$INPUT_PACKAGE_NAME" != "$ACTUAL_NAME" ]; then
+          echo "Package name mismatch: input 'package-name' is '$INPUT_PACKAGE_NAME' but $INPUT_PACKAGE_JSON_PATH has '$ACTUAL_NAME'"
+          exit 1
+        fi
 
     - name: Validate release type
       shell: bash
@@ -74,7 +94,6 @@ runs:
         echo "version=$VERSION" >> $GITHUB_OUTPUT
 
     - name: Update package version
-      id: set-package-version
       shell: bash
       env:
         RESOLVED_VERSION: ${{ steps.resolve-version.outputs.version }}
@@ -147,9 +166,37 @@ runs:
         echo "NPM tag: $NPM_TAG"
 
     # Ensure npm 11.5.1 or later is installed for OIDC
-    - name: Update npm
+    - name: Update npm if needed for OIDC provenance
+      if: inputs.package-manager == 'npm'
       shell: bash
-      run: npm install -g npm@11.11.0
+      run: |
+        NPM_VERSION=$(npm --version)
+        NPM_MAJOR=$(echo "$NPM_VERSION" | cut -d. -f1)
+        NPM_MINOR=$(echo "$NPM_VERSION" | cut -d. -f2)
+        NPM_PATCH=$(echo "$NPM_VERSION" | cut -d. -f3)
+        if [ "$NPM_MAJOR" -lt 11 ] || { [ "$NPM_MAJOR" -eq 11 ] && [ "$NPM_MINOR" -lt 5 ]; } || { [ "$NPM_MAJOR" -eq 11 ] && [ "$NPM_MINOR" -eq 5 ] && [ "$NPM_PATCH" -lt 1 ]; }; then
+          echo "npm $NPM_VERSION is too old, upgrading to 11.11.0..."
+          npm install -g npm@11.11.0
+        else
+          echo "npm $NPM_VERSION already meets minimum requirement (>= 11.5.1)"
+        fi
+
+    # Ensure pnpm 9.7.0 or later is installed for OIDC provenance
+    - name: Validate pnpm version
+      if: inputs.package-manager == 'pnpm'
+      shell: bash
+      run: |
+        if ! command -v pnpm &> /dev/null; then
+          echo "pnpm is not installed. Please add a step to install pnpm before this action."
+          exit 1
+        fi
+        PNPM_VERSION=$(pnpm --version)
+        PNPM_MAJOR=$(echo "$PNPM_VERSION" | cut -d. -f1)
+        PNPM_MINOR=$(echo "$PNPM_VERSION" | cut -d. -f2)
+        if [ "$PNPM_MAJOR" -lt 9 ] || { [ "$PNPM_MAJOR" -eq 9 ] && [ "$PNPM_MINOR" -lt 7 ]; }; then
+          echo "pnpm >= 9.7.0 is required for --provenance support, found $PNPM_VERSION"
+          exit 1
+        fi
 
     - name: Install node dependencies
       shell: bash
@@ -160,23 +207,23 @@ runs:
       id: build
       working-directory: ${{ env.PACKAGE_DIR }}
       shell: bash
-      run: npm pack
-
-    - name: Add package name to env
-      working-directory: ${{ env.PACKAGE_DIR }}
-      shell: bash
-      run: echo "PACKAGE_NAME=$(ls *.tgz | head -1)" >> $GITHUB_ENV
-
-    - name: Assert PACKAGE_NAME
-      if: ${{ env.PACKAGE_NAME == 'PLACEHOLDER' }}
-      shell: bash
-      run: exit 1 # If we end up here, it means that package was not generated.
+      run: |
+        # npm pack prints the filename on the last line of stdout;
+        # pnpm pack prints the absolute path. Capture either and normalize.
+        TARBALL=$($PM pack | tail -n1)
+        if [ -z "$TARBALL" ] || [ ! -f "$TARBALL" ]; then
+          echo "Could not locate tarball from '$PM pack' output: '$TARBALL'"
+          exit 1
+        fi
+        TARBALL_ABS=$(realpath "$TARBALL")
+        echo "PACKAGE_NAME=$(basename "$TARBALL_ABS")" >> $GITHUB_ENV
+        echo "PACKAGE_TARBALL=$TARBALL_ABS" >> $GITHUB_ENV
 
     - name: Upload npm package to GitHub
       uses: actions/upload-artifact@v4
       with:
         name: ${{ env.PACKAGE_NAME }}
-        path: "${{ env.PACKAGE_DIR }}/${{ env.PACKAGE_NAME }}"
+        path: ${{ env.PACKAGE_TARBALL }}
 
     - name: Publish npm package
       shell: bash
@@ -187,7 +234,11 @@ runs:
       run: |
         DRY_RUN_ARG=""
         if [ "$DRY_RUN" = "true" ]; then DRY_RUN_ARG="--dry-run"; fi
-        npm publish "$PACKAGE_NAME" --provenance --tag "$NPM_TAG" $DRY_RUN_ARG
+        if [ "$PM" = "npm" ]; then
+          npm publish "$PACKAGE_TARBALL" --provenance --tag "$NPM_TAG" $DRY_RUN_ARG
+        else
+          pnpm publish --provenance --tag "$NPM_TAG" --no-git-checks $DRY_RUN_ARG
+        fi
 
     - name: Delete legacy tag
       if: inputs.dry-run == 'false' && steps.figure-out-npm-tag.outputs.tag == 'legacy'
