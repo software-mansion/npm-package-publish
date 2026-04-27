@@ -198,7 +198,7 @@ runs:
         npm dist-tag rm "$INPUT_PACKAGE_NAME" legacy || echo "No legacy tag to remove"
 
     - name: Configure git
-      if: inputs.perform-git-operations == 'true' && inputs.release-type == 'stable'
+      if: inputs.perform-git-operations == 'true'
       id: configure-git
       shell: bash
       run: |
@@ -207,7 +207,7 @@ runs:
         echo "branch-name=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> $GITHUB_OUTPUT
 
     - name: Create release commit
-      if: inputs.perform-git-operations == 'true' && inputs.release-type == 'stable' && steps.configure-git.outputs.branch-name != 'main'
+      if: inputs.perform-git-operations == 'true' && steps.configure-git.outputs.branch-name != 'main'
       shell: bash
       env:
         INPUT_PACKAGE_JSON_PATH: ${{ inputs.package-json-path }}
@@ -225,7 +225,7 @@ runs:
         fi
 
     - name: Create release tag
-      if: inputs.perform-git-operations == 'true' && inputs.release-type == 'stable'
+      if: inputs.perform-git-operations == 'true'
       shell: bash
       env:
         INPUT_DRY_RUN: ${{ inputs.dry-run }}
